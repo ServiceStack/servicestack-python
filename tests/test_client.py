@@ -5,6 +5,7 @@ from requests.api import put
 from servicestack.servicestack import json_encode
 import unittest
 from .dtos import *
+from datetime import datetime, timedelta, timezone
 
 from servicestack import JsonServiceClient
 
@@ -13,9 +14,103 @@ TEST_URL = "http://localhost:5000"
 def create_test_client():
     return JsonServiceClient(TEST_URL)
 
+def create_HelloAllTypes():
+    return HelloAllTypes(name="name", 
+        all_types=create_AllTypes(),
+        all_collection_types=create_AllCollectionTypes())
+
+def create_AllTypes():
+    return AllTypes(
+        id=1,
+        char='c',
+        byte=2,
+        short=3,
+        int=4,
+        long=5,
+        u_short=6,
+        u_int=7,
+        u_long=8,
+        float=1.1,
+        double=2.2,
+        decimal=3.0,
+        string="string",
+        date_time=datetime(2001,1,1, tzinfo=timezone.utc),
+        date_time_offset=datetime(2001,1,1, tzinfo=timezone.utc),
+        time_span=timedelta(hours=1),
+        guid="ea762009b66c410b9bf5ce21ad519249",
+        string_list=["A", "B", "C"],
+        string_array=["D", "E", "F"],
+        string_map={"A":"D","B":"E","C":"F"},
+        int_string_map={1:"A",2:"B",3:"C"},
+        sub_type=SubType(id=1,name="name"))
+
+def create_AllCollectionTypes():
+    return AllCollectionTypes(
+        int_array=[1,2,3],
+        int_list=[1,2,3],
+        string_array=["A","B","C"],
+        string_list=["D","E","F"],
+        byte_array=b"QUJD", #base64(ABC)
+        poco_array=[create_Poco("pocoArray")],
+        poco_list=[create_Poco("pocoArray")],
+        poco_lookup={"A":[create_Poco("B"),create_Poco("C")]},
+        poco_lookup_map={"A":[{"B":create_Poco("C"),"D":create_Poco("E")}]})
+
+def create_Poco(name:str): return Poco(name=name)
+
 client = create_test_client()
 
 class TestApi(unittest.TestCase):
+
+    def assert_HelloAllTypesResponse(self,dto:HelloAllTypesResponse):
+        self.assertEqual(dto.result,"name")
+        self.assert_AllTypes(dto.all_types)
+        self.assert_AllCollectionTypes(dto.all_collection_types)
+        
+    def assert_AllTypes(self,dto:AllTypes):
+        self.assertEqual(dto.id,1)
+        self.assertEqual(dto.byte,2)
+        self.assertEqual(dto.short,3)
+        self.assertEqual(dto.int,4)
+        self.assertEqual(dto.long,5)
+        self.assertEqual(dto.u_short,6)
+        self.assertEqual(dto.u_int,7)
+        self.assertEqual(dto.u_long,8)
+        self.assertEqual(dto.float,1.1)
+        self.assertEqual(dto.double,2.2)
+        self.assertEqual(dto.decimal,3.0)
+        self.assertEqual(dto.string,"string")
+        self.assertEqual(dto.date_time,datetime(2001,1,1, tzinfo=timezone.utc))
+        self.assertEqual(dto.date_time_offset,datetime(2001,1,1, tzinfo=timezone.utc))
+        self.assertEqual(dto.time_span,timedelta(hours=1))
+        self.assertEqual(dto.guid,"ea762009b66c410b9bf5ce21ad519249")
+        self.assertListEqual(dto.string_list,["A", "B", "C"])
+        self.assertListEqual(dto.string_array,["D", "E", "F"])
+        self.assertDictEqual(dto.string_map,{"A":"D","B":"E","C":"F"})
+        self.assertDictEqual(dto.int_string_map,{1:"A",2:"B",3:"C"})
+        self.assertEqual(dto.sub_type.id,1)
+        self.assertEqual(dto.sub_type.name,"name")
+
+    def assert_AllCollectionTypes(self,dto:AllCollectionTypes):
+        self.assertListEqual(dto.int_array,[1,2,3])
+        self.assertListEqual(dto.int_list,[1,2,3])
+        self.assertListEqual(dto.string_array,["A","B","C"])
+        self.assertListEqual(dto.string_list,["A","B","C"])
+        self.assertEqual(dto.byte_array,b'ABC')
+        self.assertEqual(dto.poco_array.count,1)
+        self.assertEqual(dto.poco_array[0].name,"pocoArray")
+        self.assertEqual(len(dto.poco_lookup),1)
+        poco_lookup_values=dto.poco_lookup["A"]
+        self.assertEqual(poco_lookup_values.count,2)
+        self.assertEqual(poco_lookup_values[0].name,"B")
+        self.assertEqual(poco_lookup_values[1].name,"C")
+        self.assertEqual(len(dto.poco_lookup_map),1)
+        poco_lookup_map_values=dto.poco_lookup_map["A"]
+        self.assertEqual(poco_lookup_map_values.count,1)
+        poco_lookup_mapa_list=poco_lookup_map_values[0]
+        self.assertEqual(len(poco_lookup_mapa_list),2)
+        self.assertEqual(poco_lookup_mapa_list["B"].name,"C")
+        self.assertEqual(poco_lookup_mapa_list["D"].name,"E")
 
     def test_can_get_hello(self):
         response:HelloResponse = client.get(Hello(name="World"))
@@ -75,3 +170,9 @@ class TestApi(unittest.TestCase):
         self.assertIsInstance(json_obj, dict)
         response = HelloResponse(**json_obj)
         self.assertEqual(response.result, "Hello, World!")
+
+    def test_can_post_HelloAllTypes(self):
+        request=create_HelloAllTypes()
+        response:HelloAllTypesResponse=client.post(request)
+        self.assert_HelloAllTypesResponse(response)
+

@@ -1,4 +1,6 @@
+from datetime import datetime, date, timedelta
 import json
+from servicestack.utils import to_timespan
 
 from requests.models import HTTPError, Response
 
@@ -88,7 +90,16 @@ def clean_any(d):
 def _json_encoder(obj:Any):
     if is_dataclass(obj):
         return clean_any(asdict(obj))
-    return vars(obj)
+    if hasattr(obj,'__dict__'):
+        return vars(obj)
+    if isinstance(obj, (date, datetime)):
+        return obj.isoformat()
+    if isinstance(obj, timedelta):
+        #a=timedelta(days=1,hours=1,minutes=1,seconds=1,milliseconds=1)
+        return to_timespan(obj)
+    if isinstance(obj, bytes):
+        return base64.b64encode(obj).decode('ascii')
+    raise TypeError(f"Unsupported Type in JSON encoding: {type(obj)}")
 
 def json_encode(obj:Any):
     if is_dataclass(obj):
