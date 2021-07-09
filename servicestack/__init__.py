@@ -55,8 +55,11 @@ __all__ = [
     'StringResponse',
     'StringsResponse',
     'AuditBase',
-    'qsvalue'
+    'qsvalue',
+    'resolve_httpmethod',
+    'Bytes'
 ]
 
-from .servicestack import JsonServiceClient, json_encode, qsvalue, resolve_httpmethod
+from .servicestack import JsonServiceClient, json_encode, qsvalue, resolve_httpmethod, Bytes
+from .utils import *
 from .client_dtos import *

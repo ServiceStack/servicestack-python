@@ -25,7 +25,7 @@ def create_AllTypes():
         char='c',
         byte=2,
         short=3,
-        int=4,
+        int_=4,
         long=5,
         u_short=6,
         u_int=7,
@@ -50,7 +50,7 @@ def create_AllCollectionTypes():
         int_list=[1,2,3],
         string_array=["A","B","C"],
         string_list=["D","E","F"],
-        byte_array=b"QUJD", #base64(ABC)
+        byte_array=b"ABC", #base64(ABC)
         poco_array=[create_Poco("pocoArray")],
         poco_list=[create_Poco("pocoArray")],
         poco_lookup={"A":[create_Poco("B"),create_Poco("C")]},
@@ -63,15 +63,18 @@ client = create_test_client()
 class TestApi(unittest.TestCase):
 
     def assert_HelloAllTypesResponse(self,dto:HelloAllTypesResponse):
+        # print(dto)
         self.assertEqual(dto.result,"name")
         self.assert_AllTypes(dto.all_types)
         self.assert_AllCollectionTypes(dto.all_collection_types)
         
     def assert_AllTypes(self,dto:AllTypes):
+        # print(type(dto))
+        # print(vars(dto))
         self.assertEqual(dto.id,1)
         self.assertEqual(dto.byte,2)
         self.assertEqual(dto.short,3)
-        self.assertEqual(dto.int,4)
+        self.assertEqual(dto.int_,4)
         self.assertEqual(dto.long,5)
         self.assertEqual(dto.u_short,6)
         self.assertEqual(dto.u_int,7)
@@ -95,18 +98,18 @@ class TestApi(unittest.TestCase):
         self.assertListEqual(dto.int_array,[1,2,3])
         self.assertListEqual(dto.int_list,[1,2,3])
         self.assertListEqual(dto.string_array,["A","B","C"])
-        self.assertListEqual(dto.string_list,["A","B","C"])
+        self.assertListEqual(dto.string_list,["D","E","F"])
         self.assertEqual(dto.byte_array,b'ABC')
-        self.assertEqual(dto.poco_array.count,1)
+        self.assertEqual(len(dto.poco_array),1)
         self.assertEqual(dto.poco_array[0].name,"pocoArray")
         self.assertEqual(len(dto.poco_lookup),1)
         poco_lookup_values=dto.poco_lookup["A"]
-        self.assertEqual(poco_lookup_values.count,2)
+        self.assertEqual(len(poco_lookup_values),2)
         self.assertEqual(poco_lookup_values[0].name,"B")
         self.assertEqual(poco_lookup_values[1].name,"C")
         self.assertEqual(len(dto.poco_lookup_map),1)
         poco_lookup_map_values=dto.poco_lookup_map["A"]
-        self.assertEqual(poco_lookup_map_values.count,1)
+        self.assertEqual(len(poco_lookup_map_values),1)
         poco_lookup_mapa_list=poco_lookup_map_values[0]
         self.assertEqual(len(poco_lookup_mapa_list),2)
         self.assertEqual(poco_lookup_mapa_list["B"].name,"C")

@@ -1,25 +1,53 @@
 from datetime import datetime, date, timedelta
 import json
+from re import L
+
 from servicestack.utils import to_timespan
 
 from requests.models import HTTPError, Response
 
-from servicestack.client_dtos import IDelete, IGet, IPatch, IPost, IPut, IReturn, IReturnVoid, ResponseStatus
+from servicestack.client_dtos import IDelete, IGet, IPatch, IPost, IPut, IReturn, IReturnVoid, ResponseStatus, KeyValuePair
 from servicestack.log import Log
+from servicestack.utils import *
 
 from typing import Callable, TypeVar, Generic, Optional, Dict, List, Tuple, get_args, Any, Type
-from dataclasses import dataclass, field, asdict, is_dataclass
-from dataclasses_json import dataclass_json, LetterCase, Undefined
+from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
+from dataclasses_json import dataclass_json, LetterCase, Undefined, config, mm
 from urllib.parse import urljoin, urlencode, quote_plus
+from stringcase import camelcase, snakecase
+import marshmallow.fields as mf
 import requests
 import base64
+import decimal
 
 JSON_MIME_TYPE = "application/json"
+
+class Bytes(mf.Field):
+    def _serialize(self, value, attr, obj, **kwargs):
+        return to_bytearray(value)
+
+    def _deserialize(self, value, attr, data, **kwargs):
+        return from_bytearray(value)
+
+mm.TYPES[timedelta] = mf.DateTime
+mm.TYPES[KeyValuePair] = KeyValuePair[str,str]
+mm.TYPES[bytes] = Bytes
+mm.TYPES[Bytes] = Bytes
+
+@dataclass
+class A:
+    l: list
+    li: list[int]
+    gl: List[int]
+    ol: Optional[List[int]]
+    od: Optional[Dict[int,str]]
+    int_:int = field(metadata=config(field_name="@name"), default=0)
+    int_string_map: Optional[Dict[int,str]] = None
 
 def dump(obj):
   print("")
   for attr in dir(obj):
-    print("obj.%s = %r" % (attr, getattr(obj, attr)))
+    print(f"obj.{attr} = {getattr(obj, attr)}")
   print("")
 
 def _resolve_response_type(request):
@@ -103,8 +131,96 @@ def _json_encoder(obj:Any):
 
 def json_encode(obj:Any):
     if is_dataclass(obj):
-        return json.dumps(clean_any(asdict(obj)), default=_json_encoder)
+        # return obj.to_json()
+        return json.dumps(clean_any(obj.to_dict()), default=_json_encoder)
     return json.dumps(obj, default=_json_encoder)
+
+def _json_decoder(obj:Any):
+    # print('ZZZZZZZZZZZZZZZZZ')
+    # print(type(obj))
+    return obj
+
+class TypeConverters:
+    converters: dict[Type, Callable[[Any],Any]]
+    
+    def register(type:Type, converter:Callable[[Any],Any]):
+        TypeConverters.converters[type] = converter
+
+TypeConverters.converters = {
+    mf.Integer: int,
+    mf.Float: float,
+    mf.Decimal: decimal.Decimal,
+    mf.String: str,
+    mf.Boolean: bool,
+    mf.DateTime: from_datetime,
+    mf.TimeDelta: from_timespan,
+    Bytes: from_bytearray,
+    bytes: from_bytearray,
+}
+
+def is_optional(cls:Type): return f"{cls}".startswith("typing.Optional")
+def is_list(cls:Type): return f"{cls}".startswith("typing.List")
+def is_dict(cls:Type): return f"{cls}".startswith("typing.Dict")
+
+def generic_arg(cls:Type): return cls.__args__[0]
+def generic_args(cls:Type): return cls.__args__
+def unwrap(cls:Type):
+    if is_optional(cls):
+        return generic_arg(cls)
+    return cls
+
+def dict_get(name:str, obj:dict, case:Callable[[str],str] = None):
+    if name in obj: return obj[name]
+    if case:
+        nameCase = case(name)
+        if nameCase in obj: return obj[nameCase]
+    nameSnake = snakecase(name)
+    if nameSnake in obj: return obj[nameSnake]
+    nameCamel = camelcase(name)
+    if nameCamel in obj: return obj[nameCamel]
+    if name.endswith('_'):
+        return dict_get(name.rstrip('_'), obj, case)
+    return None
+
+def convert(into:Type, obj:Any):
+    if obj is None: return None
+    into = unwrap(into)
+    if is_dataclass(into):
+        to = {}
+        for f in fields(into):
+            val = dict_get(f.name, obj)            
+            to[f.name] = convert(f.type, val)
+            # print(f"to[{f.name}] = {to[f.name]}")
+        return into(**to)
+    elif is_list(into):
+        el_type = generic_arg(into)
+        to = []
+        for item in obj:
+            to.append(convert(el_type, item))
+        return to
+    elif is_dict(into):
+        key_type, val_type = generic_args(into)
+        to = {}
+        for key, val in obj.items():
+            to_key = convert(key_type, key)
+            to_val = convert(val_type, val)
+            to[to_key] = to_val
+        return to
+    else:
+        if into in TypeConverters.converters:
+            converter = TypeConverters.converters[into]
+            try:
+                return converter(obj)
+            except Exception as e:
+                Log.error(f"ERROR converter(obj) {into}({obj})", e)
+                raise e
+        else:
+            # print(f"TRY {obj} into {into}")
+            try:
+                return into(obj)
+            except Exception as e:
+                Log.error(f"ERROR into(obj) {into}({obj})", e)
+                raise e
 
 def ex_message(e:Exception):
     if hasattr(e,'message'):
@@ -260,6 +376,7 @@ class JsonServiceClient:
             return response.content
 
         json_str = response.text
+        if Log.debug_enabled: Log.debug(f"json_str: {json_str}")
 
         if not into:
             return json.loads(json_str)
@@ -267,7 +384,15 @@ class JsonServiceClient:
         if into is str:
             return json_str
 
-        res_dto = into.schema().loads(json_str)
+        try:
+            # res_dto = into.schema().loads(json_str, object_hook=_json_decoder)
+
+            json_obj = json.loads(json_str)
+            res_dto = convert(into, json_obj)
+        except Exception as e:
+            Log.error(f"Failed to deserialize into {into}: {e}", e)
+            raise e
+
         return res_dto
 
     def _raise_error(self, e:Exception):
@@ -284,7 +409,7 @@ class JsonServiceClient:
 
         if e is HTTPError:
             web_ex.status_code = e.response.status_code
-            print(dump(e))
+            if Log.debug_enabled: Log.debug(f"{e}")
 
         if hold_res:
             pass
@@ -309,7 +434,7 @@ class JsonServiceClient:
             if info.args:
                 url = append_querystring(url, info.args)
         except Exception as e:
-            if (Log.debug_enabled): Log.debug(f"send_request(): {ex_message(e)}")
+            if Log.debug_enabled(): Log.debug(f"send_request(): {ex_message(e)}")
             return self._handle_error(None, e)
 
         info.url = url
@@ -331,9 +456,12 @@ class JsonServiceClient:
         try:
             response = self._resend_request(info)
             res_dto = self._create_response(response,info)
+    
+            if Log.debug_enabled(): Log.debug(f"res_dto = {type(res_dto)}")
+    
             return res_dto
         except Exception as e:
-            if (Log.debug_enabled): Log.debug(f"send_request() create_response: {ex_message(e)}")
+            if Log.debug_enabled(): Log.debug(f"send_request() create_response: {ex_message(e)}")
             return self._handle_error(response, e)
 
 

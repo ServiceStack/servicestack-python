@@ -15,37 +15,35 @@ class Logger(ABC):
 class ConsoleLogger(Logger):
     def log(self, level:LogLevel, msg:str, e:Exception=None):
         print(f"{level}: {msg}")
+        if e:
+            print(e)
 
 class NullLogger(Logger):
     def log(self, level:LogLevel, msg:str, e:Exception=None):
         pass
 
 class Log:
-    levels: list[LogLevel] = [LogLevel.DEBUG,LogLevel.WARN,LogLevel.ERROR]
+    levels: list[LogLevel] = [LogLevel.WARN,LogLevel.ERROR]
     logger:Logger = ConsoleLogger()
 
-    @property
-    def debug_enabled(self):
+    def debug_enabled():
         return LogLevel.DEBUG in Log.levels
-    @property
-    def info_enabled(self):
+    def info_enabled():
         return LogLevel.INFO in Log.levels
-    @property
-    def warn_enabled(self):
+    def warn_enabled():
         return LogLevel.WARN in Log.levels
-    @property
-    def error_enabled(self):
+    def error_enabled():
         return LogLevel.ERROR in Log.levels
 
     def debug(msg:str):
-        if (Log.debug_enabled):
+        if Log.debug_enabled():
             Log.logger.log(LogLevel.DEBUG, msg)
     def info(msg:str):
-        if (Log.info_enabled):
+        if Log.info_enabled():
             Log.logger.log(LogLevel.INFO, msg)
     def warn(msg:str, e:Exception=None):
-        if (Log.warn_enabled):
+        if Log.warn_enabled():
             Log.logger.log(LogLevel.WARN, msg, e)
     def error(msg:str, e:Exception=None):
-        if (Log.error_enabled):
+        if Log.error_enabled():
             Log.logger.log(LogLevel.ERROR, msg, e)
