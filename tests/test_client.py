@@ -1,13 +1,12 @@
 """ Basic Serialization Tests
 """
 
-from requests.api import put
-from servicestack.servicestack import json_encode
+from requests.api import put, request
 import unittest
 from .dtos import *
 from datetime import datetime, timedelta, timezone
 
-from servicestack import JsonServiceClient
+from servicestack import JsonServiceClient, WebServiceException, to_json
 
 # TEST_URL = "https://localhost:5001"
 TEST_URL = "http://localhost:5000"
@@ -169,7 +168,7 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_post_hello_with_CustomPath_json_object(self):
-        json_obj = client.post_url("/hello", json_encode(Hello(name="World")))
+        json_obj = client.post_url("/hello", to_json(Hello(name="World")))
         self.assertIsInstance(json_obj, dict)
         response = HelloResponse(**json_obj)
         self.assertEqual(response.result, "Hello, World!")
@@ -178,4 +177,19 @@ class TestApi(unittest.TestCase):
         request=create_HelloAllTypes()
         response:HelloAllTypesResponse=client.post(request)
         self.assert_HelloAllTypesResponse(response)
+
+    def test_can_put_HelloAllTypes(self):
+        request=create_HelloAllTypes()
+        response:HelloAllTypesResponse=client.put(request)
+        self.assert_HelloAllTypesResponse(response)
+
+    def test_does_handle_404_error(self):
+        request = ThrowType(type="NotFound", message="not here")
+        try:
+            client.put(request)
+            self.fail("should throw")
+        except WebServiceException as ex:
+            status = ex.response_status
+            self.assertEqual(status.error_code, "NotFound")
+            self.assertEqual(status.message, "not here")
 

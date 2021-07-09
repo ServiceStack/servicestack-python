@@ -47,3 +47,5 @@ class Log:
     def error(msg:str, e:Exception=None):
         if Log.error_enabled():
             Log.logger.log(LogLevel.ERROR, msg, e)
+
+# Log.levels.append(LogLevel.DEBUG)

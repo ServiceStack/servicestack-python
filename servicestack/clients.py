@@ -2,13 +2,13 @@ from datetime import datetime, date, timedelta
 import json
 from re import L
 
-from servicestack.utils import to_timespan
+from requests.models import Response
+from requests.exceptions import HTTPError
 
-from requests.models import HTTPError, Response
-
-from servicestack.client_dtos import IDelete, IGet, IPatch, IPost, IPut, IReturn, IReturnVoid, ResponseStatus, KeyValuePair
+from servicestack.dtos import *
 from servicestack.log import Log
 from servicestack.utils import *
+from servicestack.fields import *
 
 from typing import Callable, TypeVar, Generic, Optional, Dict, List, Tuple, get_args, Any, Type
 from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
@@ -19,20 +19,9 @@ import marshmallow.fields as mf
 import requests
 import base64
 import decimal
+import inspect
 
 JSON_MIME_TYPE = "application/json"
-
-class Bytes(mf.Field):
-    def _serialize(self, value, attr, obj, **kwargs):
-        return to_bytearray(value)
-
-    def _deserialize(self, value, attr, data, **kwargs):
-        return from_bytearray(value)
-
-mm.TYPES[timedelta] = mf.DateTime
-mm.TYPES[KeyValuePair] = KeyValuePair[str,str]
-mm.TYPES[bytes] = Bytes
-mm.TYPES[Bytes] = Bytes
 
 @dataclass
 class A:
@@ -129,16 +118,10 @@ def _json_encoder(obj:Any):
         return base64.b64encode(obj).decode('ascii')
     raise TypeError(f"Unsupported Type in JSON encoding: {type(obj)}")
 
-def json_encode(obj:Any):
+def to_json(obj:Any):
     if is_dataclass(obj):
-        # return obj.to_json()
         return json.dumps(clean_any(obj.to_dict()), default=_json_encoder)
     return json.dumps(obj, default=_json_encoder)
-
-def _json_decoder(obj:Any):
-    # print('ZZZZZZZZZZZZZZZZZ')
-    # print(type(obj))
-    return obj
 
 class TypeConverters:
     converters: dict[Type, Callable[[Any],Any]]
@@ -147,15 +130,8 @@ class TypeConverters:
         TypeConverters.converters[type] = converter
 
 TypeConverters.converters = {
-    mf.Integer: int,
-    mf.Float: float,
-    mf.Decimal: decimal.Decimal,
-    mf.String: str,
-    mf.Boolean: bool,
     mf.DateTime: from_datetime,
     mf.TimeDelta: from_timespan,
-    Bytes: from_bytearray,
-    bytes: from_bytearray,
 }
 
 def is_optional(cls:Type): return f"{cls}".startswith("typing.Optional")
@@ -212,15 +188,24 @@ def convert(into:Type, obj:Any):
             try:
                 return converter(obj)
             except Exception as e:
-                Log.error(f"ERROR converter(obj) {into}({obj})", e)
+                Log.error(f"converter(obj) {into}({obj})", e)
+                raise e
+        elif inspect.isclass(into) and issubclass(into, mf.Field):
+            try:
+                return into().deserialize(obj)
+            except Exception as e:
+                Log.error(f"into().deserialize(obj) {into}({obj})", e)
                 raise e
         else:
-            # print(f"TRY {obj} into {into}")
             try:
                 return into(obj)
             except Exception as e:
-                Log.error(f"ERROR into(obj) {into}({obj})", e)
+                Log.error(f"into(obj) {into}({obj})", e)
                 raise e
+
+def from_json(into:Type, json_str:str):
+    json_obj = json.loads(json_str)
+    return convert(into, json_obj)
 
 def ex_message(e:Exception):
     if hasattr(e,'message'):
@@ -378,17 +363,14 @@ class JsonServiceClient:
         json_str = response.text
         if Log.debug_enabled: Log.debug(f"json_str: {json_str}")
 
-        if not into:
+        if into is None:
             return json.loads(json_str)
 
         if into is str:
             return json_str
 
         try:
-            # res_dto = into.schema().loads(json_str, object_hook=_json_decoder)
-
-            json_obj = json.loads(json_str)
-            res_dto = convert(into, json_obj)
+            res_dto = from_json(into, json_str)
         except Exception as e:
             Log.error(f"Failed to deserialize into {into}: {e}", e)
             raise e
@@ -399,7 +381,7 @@ class JsonServiceClient:
         return e
 
     def _handle_error(self, hold_res:Response, e:Exception):
-        if e is WebServiceException:
+        if type(e) == WebServiceException:
             raise self._raise_error(e)
 
         web_ex = WebServiceException()
@@ -407,12 +389,24 @@ class JsonServiceClient:
         web_ex.status_code = 500
         web_ex.status_description = ex_message(e)
 
-        if e is HTTPError:
-            web_ex.status_code = e.response.status_code
-            if Log.debug_enabled: Log.debug(f"{e}")
+        res = hold_res
+        if type(e) == HTTPError and not e.response is None:
+            res = e.response
 
-        if hold_res:
-            pass
+        if not res is None:
+            if Log.debug_enabled(): Log.debug(f"error.text: {res.text}")
+            web_ex.status_code = res.status_code
+            web_ex.status_description = res.reason
+
+            web_ex.response_status = ResponseStatus(
+                error_code=f"{res.status_code}",
+                message=res.reason)
+
+            try:
+                error_response = from_json(EmptyResponse, res.text)
+                web_ex.response_status = error_response.response_status
+            except Exception as ex:
+                Log.error(f"Could not deserialize error response {res.text}", ex)
 
         raise web_ex
         
@@ -449,7 +443,7 @@ class JsonServiceClient:
             if type(body) is str:
                 info.body_string = body
             else:
-                info.body_string = json_encode(body)
+                info.body_string = to_json(body)
 
         Log.debug(f"info method: {info.method}, url: {info.url}, body_string: {info.body_string}")
         response:Response = None

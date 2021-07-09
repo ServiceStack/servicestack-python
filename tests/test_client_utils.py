@@ -3,18 +3,18 @@
 
 import unittest
 from .dtos import *
-from servicestack import json_encode, qsvalue, resolve_httpmethod
+from servicestack import to_json, qsvalue, resolve_httpmethod
 
 class ClientUtils(unittest.TestCase):
 
     def test_json_encode(self):
         h = Hello(name='A')
-        self.assertEqual(json_encode(None), 'null')
-        self.assertEqual(json_encode("A"), '"A"')
-        self.assertEqual(json_encode(1), '1')
-        self.assertEqual(json_encode(h), '{"name": "A"}')
-        self.assertEqual(json_encode([h,h]), '[{"name": "A"}, {"name": "A"}]')
-        self.assertEqual(json_encode({'a':h,'b':h}), '{"a": {"name": "A"}, "b": {"name": "A"}}')
+        self.assertEqual(to_json(None), 'null')
+        self.assertEqual(to_json("A"), '"A"')
+        self.assertEqual(to_json(1), '1')
+        self.assertEqual(to_json(h), '{"name": "A"}')
+        self.assertEqual(to_json([h,h]), '[{"name": "A"}, {"name": "A"}]')
+        self.assertEqual(to_json({'a':h,'b':h}), '{"a": {"name": "A"}, "b": {"name": "A"}}')
 
     def test_qsvalue(self):
         self.assertEqual(qsvalue(None), "")

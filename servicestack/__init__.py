@@ -1,5 +1,4 @@
 __all__ = [
-    'JsonServiceClient',
     'IReturn',
     'IReturnVoid',
     'IGet',
@@ -55,11 +54,29 @@ __all__ = [
     'StringResponse',
     'StringsResponse',
     'AuditBase',
+    'JsonServiceClient',
+    'WebServiceException',
+    'to_json',
+    'from_json',
     'qsvalue',
     'resolve_httpmethod',
-    'Bytes'
+    'index_of',
+    'last_index_of',
+    'left_part',
+    'right_part',
+    'last_left_part',
+    'last_right_part',
+    'split_on_first',
+    'split_on_last',
+    'to_timespan',
+    'from_timespan',
+    'from_datetime',
+    'to_bytearray',
+    'from_bytearray',
+    'Bytes',
 ]
 
-from .servicestack import JsonServiceClient, json_encode, qsvalue, resolve_httpmethod, Bytes
+from .dtos import *
+from .clients import JsonServiceClient, WebServiceException, to_json, from_json, qsvalue, resolve_httpmethod
 from .utils import *
-from .client_dtos import *
+from .fields import *
