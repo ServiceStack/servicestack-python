@@ -54,6 +54,7 @@ __all__ = [
     'StringResponse',
     'StringsResponse',
     'AuditBase',
+    'TypeConverters',
     'JsonServiceClient',
     'WebServiceException',
     'to_json',
@@ -77,6 +78,6 @@ __all__ = [
 ]
 
 from .dtos import *
-from .clients import JsonServiceClient, WebServiceException, to_json, from_json, qsvalue, resolve_httpmethod
+from .clients import TypeConverters, JsonServiceClient, WebServiceException, to_json, from_json, qsvalue, resolve_httpmethod
 from .utils import *
 from .fields import *

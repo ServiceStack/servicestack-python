@@ -1,8 +1,12 @@
 """ Basic Serialization Tests
 """
 
+import dataclasses
+from servicestack.clients import convert
+import requests
 from requests.api import put, request
 import unittest
+import json
 from .dtos import *
 from datetime import datetime, timedelta, timezone
 
@@ -56,6 +60,21 @@ def create_AllCollectionTypes():
         poco_lookup_map={"A":[{"B":create_Poco("C"),"D":create_Poco("E")}]})
 
 def create_Poco(name:str): return Poco(name=name)
+
+def create_EchoComplexTypes():
+    return EchoComplexTypes(
+        sub_type=SubType(id=1,name="foo"),
+        sub_types=[SubType(id=2,name="bar"),SubType(id=3,name="baz")],
+        sub_type_map={
+            "a": SubType(id=4, name="qux")
+        },
+        string_map= {
+            "a":"b"
+        },
+        int_string_map= {
+            1:"A"
+        }
+    )
 
 client = create_test_client()
 
@@ -113,6 +132,18 @@ class TestApi(unittest.TestCase):
         self.assertEqual(len(poco_lookup_mapa_list),2)
         self.assertEqual(poco_lookup_mapa_list["B"].name,"C")
         self.assertEqual(poco_lookup_mapa_list["D"].name,"E")
+
+    def assert_EchoComplexTypes(self,dto:EchoComplexTypes):
+        self.assertEqual(dto.sub_type.id, 1)
+        self.assertEqual(dto.sub_type.name, "foo")
+        self.assertEqual(dto.sub_types[0].id, 2)
+        self.assertEqual(dto.sub_types[0].name, "bar")
+        self.assertEqual(dto.sub_types[1].id, 3)
+        self.assertEqual(dto.sub_types[1].name, "baz")
+        self.assertEqual(dto.sub_type_map["a"].id, 4)
+        self.assertEqual(dto.sub_type_map["a"].name, "qux")
+        self.assertEqual(dto.string_map["a"], "b")
+        self.assertEqual(dto.int_string_map[1], "A")
 
     def test_can_get_hello(self):
         response:HelloResponse = client.get(Hello(name="World"))
@@ -193,3 +224,206 @@ class TestApi(unittest.TestCase):
             self.assertEqual(status.error_code, "NotFound")
             self.assertEqual(status.message, "not here")
 
+    def test_does_handle_ValidationException(self):
+        request = ThrowValidation(email="invalidemail")
+        try:
+            client.post(request)
+            self.fail("should throw")
+        except WebServiceException as ex:
+            status = ex.response_status
+            errors = status.errors
+            self.assertEqual(len(errors), 3)
+            self.assertEqual(errors[0].error_code, status.error_code)
+            self.assertEqual(errors[0].message, status.message)
+
+            self.assertEqual(errors[0].error_code, "InclusiveBetween")
+            self.assertEqual(errors[0].message, "'Age' must be between 1 and 120. You entered 0.")
+            self.assertEqual(errors[0].field_name, "Age")
+
+            self.assertEqual(errors[1].error_code, "NotEmpty")
+            self.assertEqual(errors[1].message, "'Required' must not be empty.")
+            self.assertEqual(errors[1].field_name, "Required")
+
+            self.assertEqual(errors[2].error_code, "Email")
+            self.assertEqual(errors[2].message, "'Email' is not a valid email address.")
+            self.assertEqual(errors[2].field_name, "Email")
+
+    def test_does_handle_auth_failure(self):
+        request = RequiresAdmin()
+        try:
+            client.post(request)
+            self.fail("should throw")
+        except WebServiceException as ex:
+            self.assertEqual(ex.status_code, 401)
+
+    def test_can_send_ReturnVoid(self):
+        client = create_test_client()
+        sent_methods = []
+        client.request_filter = lambda req: sent_methods.append(req.method)
+
+        request = SendReturnVoid(id=1)
+        client.send(request)
+        self.assertEqual(sent_methods[-1], "POST")
+        request.id = 2
+        client.get(request)
+        self.assertEqual(sent_methods[-1], "GET")
+        request.id = 3
+        client.post(request)
+        self.assertEqual(sent_methods[-1], "POST")
+        request.id = 4
+        client.put(request)
+        self.assertEqual(sent_methods[-1], "PUT")
+        request.id = 5
+        client.delete(request)
+        self.assertEqual(sent_methods[-1], "DELETE")
+
+    def test_can_get_response_as_Raw_String(self):
+        response = client.get(HelloString(name="World"))
+        self.assertEqual(response, "World")
+
+    def test_can_get_response_as_Raw_Bytes(self):
+        response = client.get_url("/json/reply/HelloString?Name=World", response_as=bytes)
+        self.assertEqual(response.decode("utf-8"), "World")
+
+    def test_should_return_raw_text(self):
+        response = client.get(ReturnString(data="0x10"))
+        self.assertEqual(response, "0x10")
+
+    def test_can_send_raw_json_as_object(self):
+        client = create_test_client()
+        client.response_filter = lambda res: self.assertEqual(res.headers["X-Args"], "1,name")
+
+        body = {"foo":"bar"}
+        request = SendJson(id=1, name="name")
+
+        json_str = client.post(request, body=to_json(body))
+        json_obj = json.loads(json_str)
+
+        self.assertEqual(json_obj["foo"], "bar")
+
+    def test_can_send_raw_string(self):
+        client = create_test_client()
+        client.response_filter = lambda res: self.assertEqual(res.headers["X-Args"], "1,name")
+        body = "foo"
+        request = SendText(id=1, name="name", content_type="text/plain")
+        str = client.post(request, body=body)
+        self.assertEqual(str, "foo")
+
+    def test_can_deserialize_nested_list(self):
+        client = create_test_client()
+        response:Items = client.get(GetItems())
+        self.assertEqual(len(response.results), 2)
+
+        all_names = list(map(lambda x: x.name, response.results))
+        self.assertLessEqual(all_names, ["bar item 1", "bar item 2"])
+
+    def test_can_deserialize_naked_list(self):
+        client = create_test_client()
+        response:List[Item] = client.get(GetNakedItems())
+        self.assertEqual(len(response), 2)
+        all_names = list(map(lambda x: x.name, response))
+        self.assertLessEqual(all_names, ["item 1", "item 2"])
+
+    def test_can_deserialize_custom_generic_response_type(self):
+        response:QueryResponseAlt[Item] = client.get(AltQueryItems())
+        self.assertEqual(len(response.results), 2)
+        all_names = list(map(lambda x: x.name, response.results))
+        self.assertLessEqual(all_names, ["item 1", "item 2"])
+
+    def test_can_send_all_batch_request(self):
+        client = create_test_client()
+        client.response_filter = lambda res: self.assertEqual(res.headers["X-AutoBatch-Completed"], "3")
+        requests = list(map(lambda name: Hello(name=name), ["foo", "bar", "baz"]))
+        responses = client.send_all(requests)
+        self.assertListEqual(list(map(lambda x: x.result, responses)), 
+            ['Hello, foo!', 'Hello, bar!', 'Hello, baz!'])
+
+    def test_can_send_all_oneway_IReturn_batch_request(self):
+        client = create_test_client()
+        client.request_filter = lambda req: self.assertTrue(req.url.endswith("/json/oneway/Hello[]"))
+        requests = list(map(lambda name: Hello(name=name), ["foo", "bar", "baz"]))
+        client.send_all_oneway(requests)
+
+    def test_can_send_all_oneway_IReturnVoid_batch_request(self):
+        client = create_test_client()
+        client.request_filter = lambda req: self.assertTrue(req.url.endswith("/json/oneway/HelloReturnVoid[]"))
+        requests = list(map(lambda name: HelloReturnVoid(name=name), [1, 2, 3]))
+        client.send_all_oneway(requests)
+
+    def test_can_post_to_EchoTypes(self):
+        response:EchoTypes = client.post(EchoTypes(int_=1, string="foo"))
+        self.assertEqual(response.int_, 1)
+        self.assertEqual(response.string, "foo")
+
+    def test_can_get_IReturnVoid_requests(self):
+        client.get(HelloReturnVoid(id=1))
+
+    def test_can_post_IReturnVoid_requests(self):
+        client.post(HelloReturnVoid(id=1))
+
+    def test_can_handle_Validation_Errors_with_camelcasing(self):
+        client = create_test_client()
+        client.request_filter = lambda req: self.assertTrue(req.url.endswith("ThrowValidation?jsconfig=EmitCamelCaseNames%3Atrue"))
+        try:
+            client.post(ThrowValidation(), args={ "jsconfig": "EmitCamelCaseNames:true"})
+        except WebServiceException as e:
+            self.assertEqual(e.response_status.error_code, "InclusiveBetween")
+            self.assertEqual(e.response_status.message, "'Age' must be between 1 and 120. You entered 0.")
+            self.assertEqual(e.response_status.errors[1].error_code, "NotEmpty")
+            self.assertEqual(e.response_status.errors[1].field_name, "Required")
+            self.assertEqual(e.response_status.errors[1].message, "'Required' must not be empty.")
+
+    def test_can_handle_Validation_Errors_with_pascalcasing(self):
+        client = create_test_client()
+        client.request_filter = lambda req: self.assertTrue(req.url.endswith("ThrowValidation?jsconfig=EmitCamelCaseNames%3Afalse"))
+        try:
+            client.post(ThrowValidation(), args={ "jsconfig": "EmitCamelCaseNames:false"})
+        except WebServiceException as e:
+            self.assertEqual(e.response_status.error_code, "InclusiveBetween")
+            self.assertEqual(e.response_status.message, "'Age' must be between 1 and 120. You entered 0.")
+            self.assertEqual(e.response_status.errors[1].error_code, "NotEmpty")
+            self.assertEqual(e.response_status.errors[1].field_name, "Required")
+            self.assertEqual(e.response_status.errors[1].message, "'Required' must not be empty.")
+
+    def test_can_get_using_only_path_info(self):
+        response:HelloResponse = client.get_url("/hello/World", response_as=HelloResponse)
+        self.assertEqual(response.result, "Hello, World!")
+
+    def test_can_get_using_absolute_url(self):
+        response:HelloResponse = client.get_url("http://test.servicestack.net/hello/World", response_as=HelloResponse)
+        self.assertEqual(response.result, "Hello, World!")
+
+    def test_can_get_using_route_and_querystring(self):
+        response:HelloResponse = client.get_url("/hello", args={"name":"World"}, response_as=HelloResponse)
+        self.assertEqual(response.result, "Hello, World!")
+
+    def test_can_get_EchoTypes_using_route(self):
+        request = EchoTypes(long=1, string="foo")
+        args = dataclasses.asdict(request)
+        response:EchoTypes = client.get_url("/echo/types", args=args, response_as=EchoTypes)
+        self.assertEqual(response.long, 1)
+        self.assertEqual(response.string, "foo")
+
+    def test_can_post_EchoComplexTypes(self):
+        request = create_EchoComplexTypes()
+        response = client.post(request)
+        self.assert_EchoComplexTypes(response)
+
+    def test_can_handle_connection_error(self):
+        client = JsonServiceClient("http://unknown-zzz.net")
+
+        client.exception_filter = lambda res,e: (
+            # print(e.status_code) and
+            # print(e.status_description)
+        )
+        try:
+            client.get(EchoTypes(int_=1,string="foo"))
+        except WebServiceException as e:
+            self.assertEqual(e.status_code, 500)
+            self.assertIn("getaddrinfo failed", e.status_description)
+            # self.assertTrue("getaddrinfo failed" in handled_ex.status_description)
+
+    def test_can_handle_naked_List(self):
+        request = HelloList(names=['A', 'B', 'C'])
+        response:List[ListResult] = client.get(request)
+        self.assertEqual(len(response), 3)

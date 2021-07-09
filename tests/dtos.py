@@ -1,5 +1,5 @@
 """ Options:
-Date: 2021-07-09 05:46:42
+Date: 2021-07-10 02:02:16
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: https://localhost:5001
@@ -438,8 +438,6 @@ class RockstarVersion(RockstarBase):
 class MessageCrud(IReturnVoid,ISaveDb["MessageCrud"]):
     id: int = 0
     name: Optional[str] = None
-    def createResponse(): return None
-    def getTypeName(): return 'MessageCrud'
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
@@ -950,7 +948,7 @@ class RockstarWithIdAndRowVersionResponse:
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryItems(QueryDb2[Item, Poco],IReturn[List[QueryResponse]]):
+class QueryItems(QueryDb2[Item, Poco]):
     pass
 
 # @Route("/channels/{Channel}/raw")
@@ -962,8 +960,6 @@ class PostRawToChannel(IReturnVoid):
     channel: Optional[str] = None
     message: Optional[str] = None
     selector: Optional[str] = None
-    def createResponse(): return None
-    def getTypeName(): return 'PostRawToChannel'
 
 # @Route("/channels/{Channel}/chat")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
@@ -987,15 +983,13 @@ class GetChatHistory(IReturn[GetChatHistoryResponse]):
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
 class ClearChatHistory(IReturnVoid):
-    def createResponse(): return None
-    def getTypeName(): return 'ClearChatHistory'
+    pass
 
 # @Route("/reset-serverevents")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
 class ResetServerEvents(IReturnVoid):
-    def createResponse(): return None
-    def getTypeName(): return 'ResetServerEvents'
+    pass
 
 # @Route("/channels/{Channel}/object")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
@@ -1006,8 +1000,6 @@ class PostObjectToChannel(IReturnVoid):
     selector: Optional[str] = None
     custom_type: Optional[CustomType] = None
     setter_type: Optional[SetterType] = None
-    def createResponse(): return None
-    def getTypeName(): return 'PostObjectToChannel'
 
 # @Route("/account")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
@@ -1023,7 +1015,7 @@ class CustomHttpError(IReturn[CustomHttpErrorResponse]):
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class AltQueryItems(IReturn[List[QueryResponseAlt]]):
+class AltQueryItems(IReturn[QueryResponseAlt[Item]]):
     name: Optional[str] = None
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
@@ -1033,7 +1025,7 @@ class GetItems(IReturn[Items]):
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class GetNakedItems(IReturn[List[List]]):
+class GetNakedItems(IReturn[List[Item]]):
     pass
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
@@ -1232,7 +1224,7 @@ class MetadataTest(IReturn[MetadataTestResponse]):
 # @Route("/metadatatest-array")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class MetadataTestArray(IReturn[List[List]]):
+class MetadataTestArray(IReturn[List[MetadataTestChild]]):
     id: int = 0
 
 # @Route("/example", "GET")
@@ -1297,12 +1289,12 @@ class HelloWithNestedClass(IReturn[HelloResponse]):
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class HelloList(IReturn[List[List]]):
+class HelloList(IReturn[List[ListResult]]):
     names: Optional[List[str]] = None
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class HelloArray(IReturn[List[List]]):
+class HelloArray(IReturn[List[ArrayResult]]):
     names: Optional[List[str]] = None
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
@@ -1471,8 +1463,6 @@ class HelloPatch(IReturn[HelloVerbResponse],IPatch):
 @dataclass
 class HelloReturnVoid(IReturnVoid):
     id: int = 0
-    def createResponse(): return None
-    def getTypeName(): return 'HelloReturnVoid'
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
@@ -1525,13 +1515,13 @@ class ReturnStream(IReturn[Bytes]):
 # @Route("/Request1", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class GetRequest1(IReturn[List[List]],IGet):
+class GetRequest1(IReturn[List[ReturnedDto]],IGet):
     pass
 
 # @Route("/Request2", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class GetRequest2(IReturn[List[List]],IGet):
+class GetRequest2(IReturn[List[ReturnedDto]],IGet):
     pass
 
 # @Route("/sendjson")
@@ -1587,8 +1577,6 @@ class SendPut(IReturn[SendVerbResponse],IPut):
 @dataclass
 class SendReturnVoid(IReturnVoid):
     id: int = 0
-    def createResponse(): return None
-    def getTypeName(): return 'SendReturnVoid'
 
 # @Route("/session")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
@@ -1663,35 +1651,35 @@ class TestNullResponse:
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryRockstarAudit(QueryDbTenant[RockstarAuditTenant, RockstarAuto],IReturn[List[QueryResponse]]):
+class QueryRockstarAudit(QueryDbTenant[RockstarAuditTenant, RockstarAuto],IReturn[QueryResponse[RockstarAuto]]):
     id: Optional[int] = None
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryRockstarAuditSubOr(QueryDb2[RockstarAuditTenant, RockstarAuto],IReturn[List[QueryResponse]]):
+class QueryRockstarAuditSubOr(QueryDb2[RockstarAuditTenant, RockstarAuto]):
     first_name_starts_with: Optional[str] = None
     age_older_than: Optional[int] = None
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryPocoBase(QueryDb[OnlyDefinedInGenericType],IReturn[List[QueryResponse]]):
+class QueryPocoBase(QueryDb[OnlyDefinedInGenericType]):
     id: int = 0
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryPocoIntoBase(QueryDb2[OnlyDefinedInGenericTypeFrom, OnlyDefinedInGenericTypeInto],IReturn[List[QueryResponse]]):
+class QueryPocoIntoBase(QueryDb2[OnlyDefinedInGenericTypeFrom, OnlyDefinedInGenericTypeInto]):
     id: int = 0
 
 # @Route("/message/query/{Id}", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class MessageQuery(QueryDb["MessageQuery"],IReturn[List[QueryResponse]]):
+class MessageQuery(QueryDb["MessageQuery"]):
     id: int = 0
 
 # @Route("/rockstars", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryRockstars(QueryDb[Rockstar],IReturn[List[QueryResponse]]):
+class QueryRockstars(QueryDb[Rockstar]):
     pass
 
 @dataclass_json(letter_case=LetterCase.CAMEL,undefined=Undefined.EXCLUDE)

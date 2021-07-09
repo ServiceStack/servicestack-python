@@ -1,6 +1,7 @@
-from datetime import datetime, timezone, timedelta
+from datetime import date, datetime, timezone, timedelta
 from typing import Optional
 import base64
+import typing
 
 def index_of(target:str, needle:str):
     try:
@@ -122,6 +123,9 @@ def from_timespan(str:Optional[str]):
     # print(f"\n\ntimedelta({str})[{has_time}] = {hours}:{minutes}:{seconds}\n\n")
     return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds, milliseconds=int(ms*1000))
 
+_MIN_UTC_DATE = datetime.min.replace(tzinfo=timezone.utc)
+_MIN_EPOCH    = _MIN_UTC_DATE.timestamp()
+_MAX_UTC_DATE = datetime.max.replace(tzinfo=timezone.utc)
 
 def from_datetime(json_date:str):
     if json_date.startswith("/Date("):
@@ -133,7 +137,13 @@ def from_datetime(json_date:str):
             epoch_str = last_left_part(epoch_and_zone, '+')
         # print(f"epoch_str = {epoch_str}")
         epoch = int(epoch_str)
-        return datetime.fromtimestamp(epoch/1000, timezone.utc)
+        try:
+            return datetime.fromtimestamp(epoch/1000, timezone.utc)
+        except Exception as e:
+            if epoch < _MIN_EPOCH:
+                return _MIN_UTC_DATE
+            else: return _MAX_UTC_DATE
+
     return datetime.fromisoformat(json_date)
 
 def to_bytearray(value:Optional[bytes]):
