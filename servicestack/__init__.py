@@ -57,6 +57,7 @@ __all__ = [
     'TypeConverters',
     'JsonServiceClient',
     'WebServiceException',
+    'WebServiceExceptionType',
     'to_json',
     'from_json',
     'qsvalue',
@@ -78,6 +79,7 @@ __all__ = [
 ]
 
 from .dtos import *
-from .clients import TypeConverters, JsonServiceClient, WebServiceException, to_json, from_json, qsvalue, resolve_httpmethod
+from .clients import TypeConverters, JsonServiceClient, WebServiceException, WebServiceExceptionType, to_json, \
+    from_json, qsvalue, resolve_httpmethod
 from .utils import *
 from .fields import *

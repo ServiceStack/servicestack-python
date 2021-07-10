@@ -1,4 +1,5 @@
 import base64
+import json
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 
@@ -167,3 +168,31 @@ def to_bytearray(value: Optional[bytes]):
 
 def from_bytearray(base64str: Optional[str]):
     return base64.b64decode(base64str)
+
+
+def from_base64url_safe(input_str: str):
+    output = input_str
+    output = output.replace('-', '+')
+    output = output.replace('_', '/')
+    pad = len(output) % 4
+    if pad == 2:
+        output += "=="
+    elif pad == 3:
+        output += "="
+    elif pad != 0:
+        raise ValueError("Illegal base46url string!")
+    return base64.b64decode(output)
+
+
+def _decode_base64url_payload(payload: str):
+    payload_bytes = from_base64url_safe(payload)
+    payload_json = payload_bytes.decode('utf-8')
+    return json.loads(payload_json)
+
+
+def inspect_jwt(jwt: str):
+    head = _decode_base64url_payload(left_part(jwt, '.'))
+    body = _decode_base64url_payload(left_part(right_part(jwt, '.'), '.'))
+    exp = int(body['exp'])
+    return head, body, datetime.fromtimestamp(exp, timezone.utc)
+

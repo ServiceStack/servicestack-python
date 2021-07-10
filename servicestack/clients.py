@@ -3,10 +3,11 @@ import inspect
 import json
 import requests
 import typing
+from enum import Enum
 from requests.exceptions import HTTPError
 from requests.models import Response
 
-from dataclasses import fields, asdict, is_dataclass
+from dataclasses import field, fields, asdict, is_dataclass
 from typing import Callable, get_args, Type, get_origin, ForwardRef, Union
 from urllib.parse import urljoin, quote_plus
 from stringcase import camelcase, snakecase
@@ -16,6 +17,10 @@ from servicestack.fields import *
 from servicestack.log import Log
 
 JSON_MIME_TYPE = "application/json"
+AUTHORIZATION_HEADER = "Authorization"
+CONTENT_TYPE = "Content-Type"
+SS_TOKEN_COOKIE = "ss-tok"
+SS_REFRESH_TOKEN_COOKIE = "ss-reftok"
 
 
 def _dump(obj):
@@ -283,9 +288,11 @@ def log(o: Any):
     return o
 
 
+@dataclass_json
 @dataclass
 class SendContext:
-    headers: dict[str, str] = None
+    session: Optional[requests.Session] = None
+    headers: dict[str, str] = field(default_factory=dict)
     method: str = None
     url: Optional[str] = None
     request: Optional[Union[IReturn, IReturnVoid, List[IReturn], List[IReturnVoid]]] = None
@@ -296,6 +303,50 @@ class SendContext:
     request_filter: Callable[[Any], None] = None
     response_filter: Callable[[Response], None] = None
 
+    def exec(self):
+        if has_request_body(self.method):
+            if CONTENT_TYPE not in self.headers:
+                self.headers[CONTENT_TYPE] = JSON_MIME_TYPE
+        else:
+            if CONTENT_TYPE in self.headers:
+                self.headers.pop(CONTENT_TYPE)
+
+        if Log.debug_enabled():
+            using = "requests"
+            if self.session is not None:
+                using = "session"
+                Log.debug(f"{using}.cookies: {self.session.cookies}")
+                # if "ss-tok" in self.session.cookies:
+                #     ss_tok = self.session.cookies["ss-tok"]
+                #     print('ss_tok', inspect_jwt(ss_tok))
+            Log.debug(f"{using}.request({self.method}): url={self.url}, headers={self.headers}, data={self.body_string}")
+
+        response: Optional[Response] = None
+        if has_request_body(self.method):
+            if self.session is not None:
+                response = self.session.request(self.method, self.url, data=self.body_string, headers=self.headers)
+            else:
+                response = requests.request(self.method, self.url, data=self.body_string, headers=self.headers)
+        else:
+            if self.session is not None:
+                response = self.session.request(self.method, self.url, headers=self.headers)
+            else:
+                response = requests.request(self.method, self.url, headers=self.headers)
+
+        if Log.debug_enabled():
+            if self.response_as is not bytes:
+                Log.debug(f"response.text: {response.text}")
+            else:
+                Log.debug(f"response.content len: {len(response.content)}")
+            Log.debug(f"response.cookies[{len(response.cookies)}]: {response.cookies}")
+
+        return response
+
+
+class WebServiceExceptionType(Enum):
+    DEFAULT = 1
+    REFRESH_TOKEN_EXCEPTION = 2
+
 
 class WebServiceException(Exception):
     status_code: int = None
@@ -303,6 +354,7 @@ class WebServiceException(Exception):
     message: str = None
     inner_exception: Exception = None
     response_status: ResponseStatus = None
+    type: WebServiceExceptionType = WebServiceExceptionType.DEFAULT
 
 
 T = TypeVar('T')
@@ -312,11 +364,13 @@ class JsonServiceClient:
     base_url: str = None
     reply_base_url: str = None
     oneway_base_url: str = None
-    headers: dict[str, str] = None
-    bearer_token: str = None
-    username: str = None
-    password: str = None
-    max_retries = 5
+    headers: Optional[Dict[str, str]] = None
+    bearer_token: Optional[str] = None
+    refresh_token: Optional[str] = None
+    refresh_token_uri: Optional[str] = None
+    username: Optional[str] = None
+    password: Optional[str] = None
+    max_retries: int = 5
     use_token_cookie = False
     global_request_filter: Callable[[SendContext], None] = None  # static
     request_filter: Callable[[SendContext], None] = None
@@ -324,6 +378,9 @@ class JsonServiceClient:
     response_filter: Callable[[Response], None] = None
     exception_filter: Callable[[Response, Exception], None] = None
     global_exception_filter: Callable[[Response, Exception], None] = None
+    on_authentication_required: Callable[[], None] = None
+
+    _session: requests.Session = None
 
     def __init__(self, base_url):
         if not base_url:
@@ -332,6 +389,31 @@ class JsonServiceClient:
         self.reply_base_url = urljoin(base_url, 'json/reply') + "/"
         self.oneway_base_url = urljoin(base_url, 'json/oneway') + "/"
         self.headers = {'Accept': JSON_MIME_TYPE}
+        self._session = requests.Session()
+
+    def set_credentials(self, username, password):
+        self.username = username
+        self.password = password
+        return self
+
+    def set_bearer_token(self, bearer_token):
+        self.bearer_token = bearer_token
+        return self
+
+    def set_refresh_token(self, refresh_token):
+        self.refresh_token = refresh_token
+        return self
+
+    def _get_cookie_value(self, name: str) -> Optional[str]:
+        if self._session is not None and name in self._session.cookies:
+            return self._session.cookies[name]
+        return None
+
+    @property
+    def token_cookie(self): return self._get_cookie_value(SS_TOKEN_COOKIE)
+
+    @property
+    def refresh_token_cookie(self): return self._get_cookie_value(SS_REFRESH_TOKEN_COOKIE)
 
     def create_url_from_dto(self, method: str, request: Any):
         url = urljoin(self.reply_base_url, nameof(request))
@@ -339,25 +421,25 @@ class JsonServiceClient:
             url = append_querystring(url, request.__dict__)
         return url
 
-    def get(self, request: IReturn[T], args=None) -> T:
+    def get(self, request: IReturn[T], args: Dict[str, Any] = None) -> T:
         return self.send(request, "GET", None, args)
 
-    def post(self, request: IReturn[T], body=None, args=None) -> T:
+    def post(self, request: IReturn[T], body: Any = None, args: Dict[str, Any] = None) -> T:
         return self.send(request, "POST", body, args)
 
-    def put(self, request: IReturn[T], body=None, args=None) -> T:
+    def put(self, request: IReturn[T], body: Any = None, args: Dict[str, Any] = None) -> T:
         return self.send(request, "PUT", body, args)
 
-    def patch(self, request: IReturn[T], body=None, args=None) -> T:
+    def patch(self, request: IReturn[T], body: Any = None, args: Dict[str, Any] = None) -> T:
         return self.send(request, "PATCH", body, args)
 
-    def delete(self, request: IReturn[T], args=None) -> T:
+    def delete(self, request: IReturn[T], args: Dict[str, Any] = None) -> T:
         return self.send(request, "DELETE", None, args)
 
-    def options(self, request: IReturn[T], args=None) -> T:
+    def options(self, request: IReturn[T], args: Dict[str, Any] = None) -> T:
         return self.send(request, "OPTIONS", None, args)
 
-    def head(self, request: IReturn[T], args=None) -> T:
+    def head(self, request: IReturn[T], args: Dict[str, Any] = None) -> T:
         return self.send(request, "HEAD", None, args)
 
     def to_absolute_url(self, path_or_url: str):
@@ -386,13 +468,14 @@ class JsonServiceClient:
     def patch_url(self, path: str, body: Any = None, response_as: Type = None, args: dict[str, Any] = None):
         return self.send_url(path, "PATCH", response_as, body, args)
 
-    def send_url(self, path: str, method: str = None, response_as: Type = None, body=None, args: dict[str, Any] = None):
+    def send_url(self, path: str, method: str = None, response_as: Type = None, body: Any = None, args: dict[str, Any] = None):
 
         if body and not response_as:
             response_as = _resolve_response_type(body)
 
         info = SendContext(
-            headers=self.headers,
+            session=self._session,
+            headers=self.headers.copy(),
             method=method or resolve_httpmethod(body),
             url=self.to_absolute_url(path),
             request=None,
@@ -403,7 +486,7 @@ class JsonServiceClient:
 
         return self.send_request(info)
 
-    def send(self, request, method="POST", body=None, args=None):
+    def send(self, request, method="POST", body: Any = None, args: Dict[str, Any] = None):
         if not isinstance(request, IReturn) and not isinstance(request, IReturnVoid):
             raise TypeError(f"'{nameof(request)}' does not implement IReturn or IReturnVoid")
 
@@ -412,7 +495,8 @@ class JsonServiceClient:
             raise TypeError(f"Could not resolve Response Type for '{nameof(request)}'")
 
         return self.send_request(SendContext(
-            headers=self.headers,
+            session=self._session,
+            headers=self.headers.copy(),
             method=method or resolve_httpmethod(request),
             url=None,
             request=request,
@@ -442,7 +526,8 @@ class JsonServiceClient:
         url = urljoin(self.reply_base_url, nameof(request) + "[]")
 
         return self.send_request(SendContext(
-            headers=self.headers,
+            session=self._session,
+            headers=self.headers.copy(),
             method="POST",
             url=url,
             request=list(requests),
@@ -456,7 +541,8 @@ class JsonServiceClient:
         url = urljoin(self.oneway_base_url, nameof(request) + "[]")
 
         self.send_request(SendContext(
-            headers=self.headers,
+            session=self._session,
+            headers=self.headers.copy(),
             method="POST",
             url=url,
             request=list(requests),
@@ -465,15 +551,22 @@ class JsonServiceClient:
             args=None,
             response_as=list.__class_getitem__(item_response_as)))
 
-    def _resend_request(self, info):
-        if has_request_body(info.method):
-            headers = info.headers.copy() if info.headers else []
-            headers['Content-Type'] = JSON_MIME_TYPE
-            response = requests.request(info.method, info.url, data=info.body_string, headers=headers)
-        else:
-            response = requests.request(info.method, info.url, headers=info.headers)
-        response.raise_for_status()
-        return response
+    def _resend_request(self, info: SendContext):
+
+        if self.bearer_token is not None:
+            info.headers[AUTHORIZATION_HEADER] = f"Bearer {self.bearer_token}"
+        elif self.username is not None:
+            info.headers[AUTHORIZATION_HEADER] = \
+                "Basic " + base64.b64encode(f"{self.username}:{self.password}".encode('ascii')).decode('ascii')
+
+        response = info.exec()
+
+        try:
+            response.raise_for_status()
+            res_dto = self._create_response(response, info)
+            return res_dto, response
+        except Exception as e:
+            raise self._handle_error(response, e)
 
     def _create_response(self, response: Response, info: SendContext):
 
@@ -484,14 +577,15 @@ class JsonServiceClient:
         if JsonServiceClient.global_response_filter:
             JsonServiceClient.global_response_filter(response)
 
+        if len(response.cookies) > 0 and SS_REFRESH_TOKEN_COOKIE in response.cookies:
+            self.use_token_cookie = True
+
         into = info.response_as
 
         if into is bytes:
             return response.content
 
         json_str = response.text
-        if Log.debug_enabled:
-            Log.debug(f"json_str: {json_str}")
 
         if into is None:
             return json.loads(json_str)
@@ -514,7 +608,7 @@ class JsonServiceClient:
             JsonServiceClient.global_exception_filter(res, e)
         return e
 
-    def _handle_error(self, hold_res: Optional[Response], e: Exception):
+    def _handle_error(self, hold_res: Optional[Response], e: Exception, kind: Optional[WebServiceExceptionType] = None):
         if type(e) == WebServiceException:
             raise self._raise_error(hold_res, e)
 
@@ -522,6 +616,8 @@ class JsonServiceClient:
         web_ex.inner_exception = e
         web_ex.status_code = 500
         web_ex.status_description = ex_message(e)
+        if kind is not None:
+            web_ex.type = kind
 
         res = hold_res
         if type(e) == HTTPError and e.response is not None:
@@ -546,7 +642,7 @@ class JsonServiceClient:
 
         raise self._raise_error(res, web_ex)
 
-    def send_request(self, info: SendContext):
+    def create_request(self, info: SendContext):
         try:
             url = info.url
             body = info.body or info.request
@@ -582,11 +678,15 @@ class JsonServiceClient:
             else:
                 info.body_string = to_json(body)
 
-        Log.debug(f"info method: {info.method}, url: {info.url}, body_string: {info.body_string}")
+        return info
+
+    def send_request(self, info: SendContext):
+        info = self.create_request(info)
+        if Log.debug_enabled():
+            Log.debug(f"info method: {info.method}, url: {info.url}, body_string: {info.body_string}")
         response: Optional[Response] = None
         try:
-            response = self._resend_request(info)
-            res_dto = self._create_response(response, info)
+            res_dto, response = self._resend_request(info)
 
             if Log.debug_enabled():
                 Log.debug(f"res_dto = {type(res_dto)}")
@@ -595,4 +695,39 @@ class JsonServiceClient:
         except Exception as e:
             if Log.debug_enabled():
                 Log.debug(f"send_request() create_response: {ex_message(e)}")
+
+            has_refresh_token_cookie = False
+            if self.refresh_token is not None or self.use_token_cookie or has_refresh_token_cookie:
+                Log.debug("attempting to refresh bearer_token with refresh_token")
+                jwt_request = GetAccessToken(refresh_token=self.refresh_token)
+                url = self.refresh_token_uri or self.create_url_from_dto("POST", jwt_request)
+
+                try:
+                    jwt_info = SendContext(
+                        session=self._session,
+                        headers=self.headers.copy(),
+                        method="POST",
+                        request=jwt_request,
+                        url=url,
+                        response_as=_resolve_response_type(jwt_request))
+                    jwt_info = self.create_request(jwt_info)
+                    jwt_res = jwt_info.exec()
+                    jwt_res.raise_for_status()
+                    jwt_response: GetAccessTokenResponse = self._create_response(jwt_res, jwt_info)
+                    self.bearer_token = jwt_response.access_token
+                    Log.debug("send_request() bearer_token refreshed")
+                    if AUTHORIZATION_HEADER in info.headers:
+                        info.headers.pop(AUTHORIZATION_HEADER)
+                    res_dto, response = self._resend_request(info)
+                    return res_dto
+                except Exception as jwt_ex:
+                    if Log.debug_enabled():
+                        Log.debug(f"send_request() jwt_ex: {jwt_ex}")
+                    return self._handle_error(response, jwt_ex, WebServiceExceptionType.REFRESH_TOKEN_EXCEPTION)
+
+            if self.on_authentication_required is not None:
+                self.on_authentication_required()
+                res_dto, response = self._resend_request(info)
+                return res_dto
+
             return self._handle_error(response, e)

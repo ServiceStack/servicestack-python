@@ -7,13 +7,8 @@ import json
 from .dtos import *
 from datetime import datetime, timedelta, timezone
 from servicestack import JsonServiceClient, WebServiceException, to_json
+from .config import create_test_client
 
-# TEST_URL = "https://localhost:5001"
-TEST_URL = "http://localhost:5000"
-
-
-def create_test_client():
-    return JsonServiceClient(TEST_URL)
 
 
 def create_HelloAllTypes():
