@@ -1,26 +1,26 @@
 """ Basic Serialization Tests
 """
 
-import dataclasses
-from servicestack.clients import convert
-import requests
-from requests.api import put, request
 import unittest
+import dataclasses
 import json
 from .dtos import *
 from datetime import datetime, timedelta, timezone
-
 from servicestack import JsonServiceClient, WebServiceException, to_json
 
 # TEST_URL = "https://localhost:5001"
 TEST_URL = "http://localhost:5000"
+
+
 def create_test_client():
     return JsonServiceClient(TEST_URL)
 
+
 def create_HelloAllTypes():
-    return HelloAllTypes(name="name", 
-        all_types=create_AllTypes(),
-        all_collection_types=create_AllCollectionTypes())
+    return HelloAllTypes(name="name",
+                         all_types=create_AllTypes(),
+                         all_collection_types=create_AllCollectionTypes())
+
 
 def create_AllTypes():
     return AllTypes(
@@ -37,103 +37,108 @@ def create_AllTypes():
         double=2.2,
         decimal=3.0,
         string="string",
-        date_time=datetime(2001,1,1, tzinfo=timezone.utc),
-        date_time_offset=datetime(2001,1,1, tzinfo=timezone.utc),
+        date_time=datetime(2001, 1, 1, tzinfo=timezone.utc),
+        date_time_offset=datetime(2001, 1, 1, tzinfo=timezone.utc),
         time_span=timedelta(hours=1),
         guid="ea762009b66c410b9bf5ce21ad519249",
         string_list=["A", "B", "C"],
         string_array=["D", "E", "F"],
-        string_map={"A":"D","B":"E","C":"F"},
-        int_string_map={1:"A",2:"B",3:"C"},
-        sub_type=SubType(id=1,name="name"))
+        string_map={"A": "D", "B": "E", "C": "F"},
+        int_string_map={1: "A", 2: "B", 3: "C"},
+        sub_type=SubType(id=1, name="name"))
+
 
 def create_AllCollectionTypes():
     return AllCollectionTypes(
-        int_array=[1,2,3],
-        int_list=[1,2,3],
-        string_array=["A","B","C"],
-        string_list=["D","E","F"],
-        byte_array=b"ABC", #base64(ABC)
+        int_array=[1, 2, 3],
+        int_list=[1, 2, 3],
+        string_array=["A", "B", "C"],
+        string_list=["D", "E", "F"],
+        byte_array=b"ABC",  # base64(ABC)
         poco_array=[create_Poco("pocoArray")],
         poco_list=[create_Poco("pocoArray")],
-        poco_lookup={"A":[create_Poco("B"),create_Poco("C")]},
-        poco_lookup_map={"A":[{"B":create_Poco("C"),"D":create_Poco("E")}]})
+        poco_lookup={"A": [create_Poco("B"), create_Poco("C")]},
+        poco_lookup_map={"A": [{"B": create_Poco("C"), "D": create_Poco("E")}]})
 
-def create_Poco(name:str): return Poco(name=name)
+
+def create_Poco(name: str): return Poco(name=name)
+
 
 def create_EchoComplexTypes():
     return EchoComplexTypes(
-        sub_type=SubType(id=1,name="foo"),
-        sub_types=[SubType(id=2,name="bar"),SubType(id=3,name="baz")],
+        sub_type=SubType(id=1, name="foo"),
+        sub_types=[SubType(id=2, name="bar"), SubType(id=3, name="baz")],
         sub_type_map={
             "a": SubType(id=4, name="qux")
         },
-        string_map= {
-            "a":"b"
+        string_map={
+            "a": "b"
         },
-        int_string_map= {
-            1:"A"
+        int_string_map={
+            1: "A"
         }
     )
 
+
 client = create_test_client()
+
 
 class TestApi(unittest.TestCase):
 
-    def assert_HelloAllTypesResponse(self,dto:HelloAllTypesResponse):
+    def assert_HelloAllTypesResponse(self, dto: HelloAllTypesResponse):
         # print(dto)
-        self.assertEqual(dto.result,"name")
+        self.assertEqual(dto.result, "name")
         self.assert_AllTypes(dto.all_types)
         self.assert_AllCollectionTypes(dto.all_collection_types)
-        
-    def assert_AllTypes(self,dto:AllTypes):
+
+    def assert_AllTypes(self, dto: AllTypes):
         # print(type(dto))
         # print(vars(dto))
-        self.assertEqual(dto.id,1)
-        self.assertEqual(dto.byte,2)
-        self.assertEqual(dto.short,3)
-        self.assertEqual(dto.int_,4)
-        self.assertEqual(dto.long,5)
-        self.assertEqual(dto.u_short,6)
-        self.assertEqual(dto.u_int,7)
-        self.assertEqual(dto.u_long,8)
-        self.assertEqual(dto.float,1.1)
-        self.assertEqual(dto.double,2.2)
-        self.assertEqual(dto.decimal,3.0)
-        self.assertEqual(dto.string,"string")
-        self.assertEqual(dto.date_time,datetime(2001,1,1, tzinfo=timezone.utc))
-        self.assertEqual(dto.date_time_offset,datetime(2001,1,1, tzinfo=timezone.utc))
-        self.assertEqual(dto.time_span,timedelta(hours=1))
-        self.assertEqual(dto.guid,"ea762009b66c410b9bf5ce21ad519249")
-        self.assertListEqual(dto.string_list,["A", "B", "C"])
-        self.assertListEqual(dto.string_array,["D", "E", "F"])
-        self.assertDictEqual(dto.string_map,{"A":"D","B":"E","C":"F"})
-        self.assertDictEqual(dto.int_string_map,{1:"A",2:"B",3:"C"})
-        self.assertEqual(dto.sub_type.id,1)
-        self.assertEqual(dto.sub_type.name,"name")
+        self.assertEqual(dto.id, 1)
+        self.assertEqual(dto.byte, 2)
+        self.assertEqual(dto.short, 3)
+        self.assertEqual(dto.int_, 4)
+        self.assertEqual(dto.long, 5)
+        self.assertEqual(dto.u_short, 6)
+        self.assertEqual(dto.u_int, 7)
+        self.assertEqual(dto.u_long, 8)
+        self.assertEqual(dto.float, 1.1)
+        self.assertEqual(dto.double, 2.2)
+        self.assertEqual(dto.decimal, 3.0)
+        self.assertEqual(dto.string, "string")
+        self.assertEqual(dto.date_time, datetime(2001, 1, 1, tzinfo=timezone.utc))
+        self.assertEqual(dto.date_time_offset, datetime(2001, 1, 1, tzinfo=timezone.utc))
+        self.assertEqual(dto.time_span, timedelta(hours=1))
+        self.assertEqual(dto.guid, "ea762009b66c410b9bf5ce21ad519249")
+        self.assertListEqual(dto.string_list, ["A", "B", "C"])
+        self.assertListEqual(dto.string_array, ["D", "E", "F"])
+        self.assertDictEqual(dto.string_map, {"A": "D", "B": "E", "C": "F"})
+        self.assertDictEqual(dto.int_string_map, {1: "A", 2: "B", 3: "C"})
+        self.assertEqual(dto.sub_type.id, 1)
+        self.assertEqual(dto.sub_type.name, "name")
 
-    def assert_AllCollectionTypes(self,dto:AllCollectionTypes):
-        self.assertListEqual(dto.int_array,[1,2,3])
-        self.assertListEqual(dto.int_list,[1,2,3])
-        self.assertListEqual(dto.string_array,["A","B","C"])
-        self.assertListEqual(dto.string_list,["D","E","F"])
-        self.assertEqual(dto.byte_array,b'ABC')
-        self.assertEqual(len(dto.poco_array),1)
-        self.assertEqual(dto.poco_array[0].name,"pocoArray")
-        self.assertEqual(len(dto.poco_lookup),1)
-        poco_lookup_values=dto.poco_lookup["A"]
-        self.assertEqual(len(poco_lookup_values),2)
-        self.assertEqual(poco_lookup_values[0].name,"B")
-        self.assertEqual(poco_lookup_values[1].name,"C")
-        self.assertEqual(len(dto.poco_lookup_map),1)
-        poco_lookup_map_values=dto.poco_lookup_map["A"]
-        self.assertEqual(len(poco_lookup_map_values),1)
-        poco_lookup_mapa_list=poco_lookup_map_values[0]
-        self.assertEqual(len(poco_lookup_mapa_list),2)
-        self.assertEqual(poco_lookup_mapa_list["B"].name,"C")
-        self.assertEqual(poco_lookup_mapa_list["D"].name,"E")
+    def assert_AllCollectionTypes(self, dto: AllCollectionTypes):
+        self.assertListEqual(dto.int_array, [1, 2, 3])
+        self.assertListEqual(dto.int_list, [1, 2, 3])
+        self.assertListEqual(dto.string_array, ["A", "B", "C"])
+        self.assertListEqual(dto.string_list, ["D", "E", "F"])
+        self.assertEqual(dto.byte_array, b'ABC')
+        self.assertEqual(len(dto.poco_array), 1)
+        self.assertEqual(dto.poco_array[0].name, "pocoArray")
+        self.assertEqual(len(dto.poco_lookup), 1)
+        poco_lookup_values = dto.poco_lookup["A"]
+        self.assertEqual(len(poco_lookup_values), 2)
+        self.assertEqual(poco_lookup_values[0].name, "B")
+        self.assertEqual(poco_lookup_values[1].name, "C")
+        self.assertEqual(len(dto.poco_lookup_map), 1)
+        poco_lookup_map_values = dto.poco_lookup_map["A"]
+        self.assertEqual(len(poco_lookup_map_values), 1)
+        poco_lookup_mapa_list = poco_lookup_map_values[0]
+        self.assertEqual(len(poco_lookup_mapa_list), 2)
+        self.assertEqual(poco_lookup_mapa_list["B"].name, "C")
+        self.assertEqual(poco_lookup_mapa_list["D"].name, "E")
 
-    def assert_EchoComplexTypes(self,dto:EchoComplexTypes):
+    def assert_EchoComplexTypes(self, dto: EchoComplexTypes):
         self.assertEqual(dto.sub_type.id, 1)
         self.assertEqual(dto.sub_type.name, "foo")
         self.assertEqual(dto.sub_types[0].id, 2)
@@ -146,15 +151,15 @@ class TestApi(unittest.TestCase):
         self.assertEqual(dto.int_string_map[1], "A")
 
     def test_can_get_hello(self):
-        response:HelloResponse = client.get(Hello(name="World"))
+        response: HelloResponse = client.get(Hello(name="World"))
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_post_hello(self):
-        response:HelloResponse = client.post(Hello(name="World"))
+        response: HelloResponse = client.post(Hello(name="World"))
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_send_umlauts(self):
-        response:HelloResponse = client.post(Hello(name="üöäß"))
+        response: HelloResponse = client.post(Hello(name="üöäß"))
         self.assertEqual(response.result, "Hello, üöäß!")
 
     def test_does_fire_Request_and_Response_filters(self):
@@ -167,35 +172,35 @@ class TestApi(unittest.TestCase):
         client.request_filter = lambda info: events.append("requestFilter")
         client.response_filter = lambda res: events.append("responseFilter")
 
-        response:HelloResponse = client.get(Hello(name="World"))
+        response: HelloResponse = client.get(Hello(name="World"))
         self.assertEqual(response.result, "Hello, World!")
-        
+
         self.assertListEqual(events, [
-          "requestFilter",
-          "globalRequestFilter",
-          "responseFilter",
-          "globalResponseFilter"
+            "requestFilter",
+            "globalRequestFilter",
+            "responseFilter",
+            "globalResponseFilter"
         ])
 
         JsonServiceClient.global_request_filter = None
         JsonServiceClient.global_response_filter = None
 
     def test_can_get_hello_with_custom_path(self):
-        response:HelloResponse = client.get_url("/hello/World", response_as=HelloResponse)
+        response: HelloResponse = client.get_url("/hello/World", response_as=HelloResponse)
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_get_hello_with_CustomPath_as_raw_types(self):
-        json_str = client.get_url("/hello", response_as=str, args={'name':'World'})
+        json_str = client.get_url("/hello", response_as=str, args={'name': 'World'})
         self.assertEqual(json_str, '{"result":"Hello, World!"}')
 
-        json_bytes:bytes = client.get_url("/hello", response_as=bytes, args={'name':'World'})
+        json_bytes: bytes = client.get_url("/hello", response_as=bytes, args={'name': 'World'})
         self.assertEqual(json_bytes.decode("utf-8"), '{"result":"Hello, World!"}')
 
-        dto:HelloResponse = client.get_url("/hello", response_as=HelloResponse, args={'name':'World'})
+        dto: HelloResponse = client.get_url("/hello", response_as=HelloResponse, args={'name': 'World'})
         self.assertEqual(dto.result, "Hello, World!")
 
     def test_can_post_Hello_with_CustomPath(self):
-        response:HelloResponse = client.post_url("/hello", Hello(name="World"))
+        response: HelloResponse = client.post_url("/hello", Hello(name="World"))
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_post_hello_with_CustomPath_json_object(self):
@@ -205,13 +210,13 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_post_HelloAllTypes(self):
-        request=create_HelloAllTypes()
-        response:HelloAllTypesResponse=client.post(request)
+        request = create_HelloAllTypes()
+        response: HelloAllTypesResponse = client.post(request)
         self.assert_HelloAllTypesResponse(response)
 
     def test_can_put_HelloAllTypes(self):
-        request=create_HelloAllTypes()
-        response:HelloAllTypesResponse=client.put(request)
+        request = create_HelloAllTypes()
+        response: HelloAllTypesResponse = client.put(request)
         self.assert_HelloAllTypesResponse(response)
 
     def test_does_handle_404_error(self):
@@ -293,7 +298,7 @@ class TestApi(unittest.TestCase):
         client = create_test_client()
         client.response_filter = lambda res: self.assertEqual(res.headers["X-Args"], "1,name")
 
-        body = {"foo":"bar"}
+        body = {"foo": "bar"}
         request = SendJson(id=1, name="name")
 
         json_str = client.post(request, body=to_json(body))
@@ -311,7 +316,7 @@ class TestApi(unittest.TestCase):
 
     def test_can_deserialize_nested_list(self):
         client = create_test_client()
-        response:Items = client.get(GetItems())
+        response: Items = client.get(GetItems())
         self.assertEqual(len(response.results), 2)
 
         all_names = list(map(lambda x: x.name, response.results))
@@ -319,13 +324,13 @@ class TestApi(unittest.TestCase):
 
     def test_can_deserialize_naked_list(self):
         client = create_test_client()
-        response:List[Item] = client.get(GetNakedItems())
+        response: List[Item] = client.get(GetNakedItems())
         self.assertEqual(len(response), 2)
         all_names = list(map(lambda x: x.name, response))
         self.assertLessEqual(all_names, ["item 1", "item 2"])
 
     def test_can_deserialize_custom_generic_response_type(self):
-        response:QueryResponseAlt[Item] = client.get(AltQueryItems())
+        response: QueryResponseAlt[Item] = client.get(AltQueryItems())
         self.assertEqual(len(response.results), 2)
         all_names = list(map(lambda x: x.name, response.results))
         self.assertLessEqual(all_names, ["item 1", "item 2"])
@@ -335,8 +340,8 @@ class TestApi(unittest.TestCase):
         client.response_filter = lambda res: self.assertEqual(res.headers["X-AutoBatch-Completed"], "3")
         requests = list(map(lambda name: Hello(name=name), ["foo", "bar", "baz"]))
         responses = client.send_all(requests)
-        self.assertListEqual(list(map(lambda x: x.result, responses)), 
-            ['Hello, foo!', 'Hello, bar!', 'Hello, baz!'])
+        self.assertListEqual(list(map(lambda x: x.result, responses)),
+                             ['Hello, foo!', 'Hello, bar!', 'Hello, baz!'])
 
     def test_can_send_all_oneway_IReturn_batch_request(self):
         client = create_test_client()
@@ -351,7 +356,7 @@ class TestApi(unittest.TestCase):
         client.send_all_oneway(requests)
 
     def test_can_post_to_EchoTypes(self):
-        response:EchoTypes = client.post(EchoTypes(int_=1, string="foo"))
+        response: EchoTypes = client.post(EchoTypes(int_=1, string="foo"))
         self.assertEqual(response.int_, 1)
         self.assertEqual(response.string, "foo")
 
@@ -363,9 +368,10 @@ class TestApi(unittest.TestCase):
 
     def test_can_handle_Validation_Errors_with_camelcasing(self):
         client = create_test_client()
-        client.request_filter = lambda req: self.assertTrue(req.url.endswith("ThrowValidation?jsconfig=EmitCamelCaseNames%3Atrue"))
+        client.request_filter = lambda req: self.assertTrue(
+            req.url.endswith("ThrowValidation?jsconfig=EmitCamelCaseNames%3Atrue"))
         try:
-            client.post(ThrowValidation(), args={ "jsconfig": "EmitCamelCaseNames:true"})
+            client.post(ThrowValidation(), args={"jsconfig": "EmitCamelCaseNames:true"})
         except WebServiceException as e:
             self.assertEqual(e.response_status.error_code, "InclusiveBetween")
             self.assertEqual(e.response_status.message, "'Age' must be between 1 and 120. You entered 0.")
@@ -375,9 +381,10 @@ class TestApi(unittest.TestCase):
 
     def test_can_handle_Validation_Errors_with_pascalcasing(self):
         client = create_test_client()
-        client.request_filter = lambda req: self.assertTrue(req.url.endswith("ThrowValidation?jsconfig=EmitCamelCaseNames%3Afalse"))
+        client.request_filter = lambda req: self.assertTrue(
+            req.url.endswith("ThrowValidation?jsconfig=EmitCamelCaseNames%3Afalse"))
         try:
-            client.post(ThrowValidation(), args={ "jsconfig": "EmitCamelCaseNames:false"})
+            client.post(ThrowValidation(), args={"jsconfig": "EmitCamelCaseNames:false"})
         except WebServiceException as e:
             self.assertEqual(e.response_status.error_code, "InclusiveBetween")
             self.assertEqual(e.response_status.message, "'Age' must be between 1 and 120. You entered 0.")
@@ -386,21 +393,21 @@ class TestApi(unittest.TestCase):
             self.assertEqual(e.response_status.errors[1].message, "'Required' must not be empty.")
 
     def test_can_get_using_only_path_info(self):
-        response:HelloResponse = client.get_url("/hello/World", response_as=HelloResponse)
+        response: HelloResponse = client.get_url("/hello/World", response_as=HelloResponse)
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_get_using_absolute_url(self):
-        response:HelloResponse = client.get_url("http://test.servicestack.net/hello/World", response_as=HelloResponse)
+        response: HelloResponse = client.get_url("http://test.servicestack.net/hello/World", response_as=HelloResponse)
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_get_using_route_and_querystring(self):
-        response:HelloResponse = client.get_url("/hello", args={"name":"World"}, response_as=HelloResponse)
+        response: HelloResponse = client.get_url("/hello", args={"name": "World"}, response_as=HelloResponse)
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_get_EchoTypes_using_route(self):
         request = EchoTypes(long=1, string="foo")
         args = dataclasses.asdict(request)
-        response:EchoTypes = client.get_url("/echo/types", args=args, response_as=EchoTypes)
+        response: EchoTypes = client.get_url("/echo/types", args=args, response_as=EchoTypes)
         self.assertEqual(response.long, 1)
         self.assertEqual(response.string, "foo")
 
@@ -412,12 +419,12 @@ class TestApi(unittest.TestCase):
     def test_can_handle_connection_error(self):
         client = JsonServiceClient("http://unknown-zzz.net")
 
-        client.exception_filter = lambda res,e: (
+        client.exception_filter = lambda res, e: (
             # print(e.status_code) and
             # print(e.status_description)
         )
         try:
-            client.get(EchoTypes(int_=1,string="foo"))
+            client.get(EchoTypes(int_=1, string="foo"))
         except WebServiceException as e:
             self.assertEqual(e.status_code, 500)
             self.assertIn("getaddrinfo failed", e.status_description)
@@ -425,5 +432,5 @@ class TestApi(unittest.TestCase):
 
     def test_can_handle_naked_List(self):
         request = HelloList(names=['A', 'B', 'C'])
-        response:List[ListResult] = client.get(request)
+        response: List[ListResult] = client.get(request)
         self.assertEqual(len(response), 3)

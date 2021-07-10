@@ -1,39 +1,33 @@
-from datetime import datetime, date, timedelta
-import json
-from re import L
-from requests.api import request
-
-from requests.models import Response
-from requests.exceptions import HTTPError
-
-from servicestack.dtos import *
-from servicestack.log import Log
-from servicestack.utils import *
-from servicestack.fields import *
-
-from typing import Callable, TypeVar, Generic, Optional, Dict, List, Tuple, get_args, Any, Type, get_origin, get_type_hints, ForwardRef
-from dataclasses import dataclass, field, fields, asdict, is_dataclass, Field
-from dataclasses_json import dataclass_json, LetterCase, Undefined, config, mm
-from urllib.parse import urljoin, urlencode, quote_plus
-from stringcase import camelcase, snakecase
-import marshmallow.fields as mf
-import requests
-import base64
 import decimal
 import inspect
+import json
+import requests
+from requests.exceptions import HTTPError
+from requests.models import Response
+
+from dataclasses import fields, asdict, is_dataclass
+from typing import Callable, get_args, Type, get_origin, ForwardRef, Union
+from urllib.parse import urljoin, quote_plus
+from stringcase import camelcase, snakecase
+
+from servicestack.dtos import *
+from servicestack.fields import *
+from servicestack.log import Log
 
 JSON_MIME_TYPE = "application/json"
 
+
 def _dump(obj):
-  print("")
-  for attr in dir(obj):
-    print(f"obj.{attr} = {getattr(obj, attr)}")
-  print("")
+    print("")
+    for attr in dir(obj):
+        print(f"obj.{attr} = {getattr(obj, attr)}")
+    print("")
+
 
 def _resolve_response_type(request):
     if isinstance(request, IReturn):
         for cls in request.__orig_bases__:
-            if hasattr(cls,'__args__'):
+            if hasattr(cls, '__args__'):
                 candidate = cls.__args__[0]
                 if type(candidate) == ForwardRef:
                     return _resolve_forwardref(candidate, type(request))
@@ -41,6 +35,7 @@ def _resolve_response_type(request):
     if isinstance(request, IReturnVoid):
         return type(None)
     return None
+
 
 def resolve_httpmethod(request):
     if isinstance(request, IGet):
@@ -55,11 +50,13 @@ def resolve_httpmethod(request):
         return "DELETE"
     return "POST"
 
+
 def nameof(instance):
     return type(instance).__name__
 
+
 def qsvalue(arg):
-    if not arg: 
+    if not arg:
         return ""
     arg_type = type(arg)
     if arg_type is str:
@@ -68,26 +65,32 @@ def qsvalue(arg):
         return base64.b64encode(arg).decode("utf-8")
     return quote_plus(str(arg))
 
-def append_querystring(url:str, args:dict[str,Any]):
+
+def append_querystring(url: str, args: dict[str, Any]):
     if args:
         for key in args:
             val = args[key]
-            if (val is None): continue
+            if val is None: continue
             url += '&' if '?' in url else '?'
             url += key + '=' + qsvalue(val)
     return url
 
-def has_request_body(method:str):
+
+def has_request_body(method: str):
     return not (method == "GET" or method == "DELETE" or method == "HEAD" or method == "OPTIONS")
+
 
 def _empty(x):
     return x is None or x == {} or x == []
 
-def _clean_list(d:list):
+
+def _clean_list(d: list):
     return [v for v in (clean_any(v) for v in d) if not _empty(v)]
 
-def _clean_dict(d:dict):
+
+def _clean_dict(d: dict):
     return {k: v for k, v in ((k, clean_any(v)) for k, v in d.items()) if not _empty(v)}
+
 
 def clean_any(d):
     """recursively remove empty lists, empty dicts, or None elements from a dictionary"""
@@ -98,15 +101,15 @@ def clean_any(d):
     else:
         return _clean_dict(d)
 
-def _json_encoder(obj:Any):
+
+def _json_encoder(obj: Any):
     if is_dataclass(obj):
         return clean_any(asdict(obj))
-    if hasattr(obj,'__dict__'):
+    if hasattr(obj, '__dict__'):
         return vars(obj)
-    if isinstance(obj, (date, datetime)):
+    if isinstance(obj, (datetime.date, datetime)):
         return obj.isoformat()
     if isinstance(obj, timedelta):
-        #a=timedelta(days=1,hours=1,minutes=1,seconds=1,milliseconds=1)
         return to_timespan(obj)
     if isinstance(obj, bytes):
         return base64.b64encode(obj).decode('ascii')
@@ -114,35 +117,48 @@ def _json_encoder(obj:Any):
         return float(obj)
     raise TypeError(f"Unsupported Type in JSON encoding: {type(obj)}")
 
-def to_json(obj:Any):
+
+def to_json(obj: Any):
     if is_dataclass(obj):
         return json.dumps(clean_any(obj.to_dict()), default=_json_encoder)
     return json.dumps(obj, default=_json_encoder)
 
-class TypeConverters:
-    converters: dict[Type, Callable[[Any],Any]]
-    
-    def register(type:Type, converter:Callable[[Any],Any]):
-        TypeConverters.converters[type] = converter
 
-TypeConverters.converters = {
+class TypeConverters:
+    deserializers: dict[Type, Callable[[Any], Any]]
+
+    @staticmethod
+    def register(type: Type, converter: Callable[[Any], Any]):
+        TypeConverters.deserializers[type] = converter
+
+
+TypeConverters.deserializers = {
     mf.DateTime: from_datetime,
     mf.TimeDelta: from_timespan,
 }
 
-def is_optional(cls:Type): return f"{cls}".startswith("typing.Optional")
-def is_list(cls:Type): 
+
+def is_optional(cls: Type): return f"{cls}".startswith("typing.Optional")
+
+
+def is_list(cls: Type):
     return cls == typing.List or cls == list or get_origin(cls) == list
-def is_dict(cls:Type): 
+
+
+def is_dict(cls: Type):
     return cls == typing.Dict or cls == dict or get_origin(cls) == dict
 
-def generic_arg(cls:Type): return generic_args(cls)[0]
-def generic_args(cls:Type): 
+
+def generic_arg(cls: Type): return generic_args(cls)[0]
+
+
+def generic_args(cls: Type):
     if not hasattr(cls, '__args__'):
         raise TypeError(f"{cls} is not a Generic Type")
     return cls.__args__
 
-def _resolve_forwardref(cls:Type, orig:Type=None):
+
+def _resolve_forwardref(cls: Type, orig: Type = None):
     type_name = cls.__forward_arg__
     if not orig is None and orig.__name__ == type_name:
         return orig
@@ -150,31 +166,38 @@ def _resolve_forwardref(cls:Type, orig:Type=None):
         raise TypeError(f"Could not resolve ForwardRef('{type_name}')")
     return globals()[type_name]
 
-def unwrap(cls:Type):
+
+def unwrap(cls: Type):
     if type(cls) == ForwardRef:
         cls = _resolve_forwardref(cls)
     if is_optional(cls):
         return generic_arg(cls)
     return cls
 
-def dict_get(name:str, obj:dict, case:Callable[[str],str] = None):
+
+def dict_get(name: str, obj: dict, case: Callable[[str], str] = None):
     if name in obj: return obj[name]
     if case:
-        nameCase = case(name)
-        if nameCase in obj: return obj[nameCase]
-    nameSnake = snakecase(name)
-    if nameSnake in obj: return obj[nameSnake]
-    nameCamel = camelcase(name)
-    if nameCamel in obj: return obj[nameCamel]
+        name_case = case(name)
+        if name_case in obj:
+            return obj[name_case]
+    name_snake = snakecase(name)
+    if name_snake in obj:
+        return obj[name_snake]
+    name_camel = camelcase(name)
+    if name_camel in obj:
+        return obj[name_camel]
     if name.endswith('_'):
         return dict_get(name.rstrip('_'), obj, case)
     return None
 
-def _resolve_type(cls:Type, substitute_types:Dict[str,type]):
+
+def _resolve_type(cls: Type, substitute_types: Dict[str, type]):
     if substitute_types is None: return cls
     return substitute_types[cls] if cls in substitute_types else cls
 
-def convert(into:Type, obj:Any, substitute_types:Dict[str,type]=None):
+
+def convert(into: Type, obj: Any, substitute_types: Dict[str, type] = None):
     if obj is None: return None
     into = unwrap(into)
     into = _resolve_type(into, substitute_types)
@@ -182,9 +205,9 @@ def convert(into:Type, obj:Any, substitute_types:Dict[str,type]=None):
 
     generic_def = get_origin(into)
     if generic_def is not None and is_dataclass(generic_def):
-        reified_types={}
+        reified_types = {}
         generic_type_args = get_args(into)
-        i=0
+        i = 0
         for t in generic_def.__parameters__:
             reified_types[t] = generic_type_args[i]
             i += 1
@@ -215,8 +238,8 @@ def convert(into:Type, obj:Any, substitute_types:Dict[str,type]=None):
             to[to_key] = to_val
         return to
     else:
-        if into in TypeConverters.converters:
-            converter = TypeConverters.converters[into]
+        if into in TypeConverters.deserializers:
+            converter = TypeConverters.deserializers[into]
             try:
                 return converter(obj)
             except Exception as e:
@@ -235,109 +258,128 @@ def convert(into:Type, obj:Any, substitute_types:Dict[str,type]=None):
                 Log.error(f"into(obj) {into}({obj})", e)
                 raise e
 
-def from_json(into:Type, json_str:str):
+
+def from_json(into: Type, json_str: str):
     if json_str is None or json_str == "": return None
     json_obj = json.loads(json_str)
     return convert(into, json_obj)
 
-def ex_message(e:Exception):
-    if hasattr(e,'message'):
+
+def ex_message(e: Exception):
+    if hasattr(e, 'message'):
         return e.message
     return str(e)
 
-def log(o:Any):
+
+def log(o: Any):
     print(o)
     return o
 
+
 @dataclass
 class SendContext:
-    headers: dict[str,str] = None
+    headers: dict[str, str] = None
     method: str = None
-    url: str = None
-    request: IReturn = None
-    body: Any = None
-    body_string: str = None
-    args: dict[str,str] = None
+    url: Optional[str] = None
+    request: Optional[Union[IReturn, IReturnVoid, List[IReturn], List[IReturnVoid]]] = None
+    body: Optional[Any] = None
+    body_string: Optional[str] = None
+    args: Optional[dict[str, str]] = None
     response_as: type = None
-    request_filter:Callable[[Any],None] = None
-    response_filter:Callable[[Response],None] = None
+    request_filter: Callable[[Any], None] = None
+    response_filter: Callable[[Response], None] = None
+
 
 class WebServiceException(Exception):
     status_code: int = None
     status_description: str = None
     message: str = None
     inner_exception: Exception = None
-    response_status:ResponseStatus = None
+    response_status: ResponseStatus = None
+
 
 T = TypeVar('T')
+
+
 class JsonServiceClient:
     base_url: str = None
     reply_base_url: str = None
     oneway_base_url: str = None
-    headers: dict[str,str] = None
+    headers: dict[str, str] = None
     bearer_token: str = None
     username: str = None
     password: str = None
     max_retries = 5
     use_token_cookie = False
-    global_request_filter:Callable[[SendContext],None] = None #static
-    request_filter:Callable[[SendContext],None] = None
-    global_response_filter:Callable[[Response],None] = None   #static
-    response_filter:Callable[[Response],None] = None
-    exception_filter:Callable[[Response,Exception],None] = None
-    global_exception_filter:Callable[[Response,Exception],None] = None
+    global_request_filter: Callable[[SendContext], None] = None  # static
+    request_filter: Callable[[SendContext], None] = None
+    global_response_filter: Callable[[Response], None] = None  # static
+    response_filter: Callable[[Response], None] = None
+    exception_filter: Callable[[Response, Exception], None] = None
+    global_exception_filter: Callable[[Response, Exception], None] = None
 
-    def __init__(self,base_url):
+    def __init__(self, base_url):
         if not base_url:
             raise TypeError(f"base_url is required")
         self.base_url = base_url
-        self.reply_base_url = urljoin(base_url,'json/reply') + "/"
-        self.oneway_base_url = urljoin(base_url,'json/oneway') + "/"
-        self.headers = { 'Accept': JSON_MIME_TYPE }
+        self.reply_base_url = urljoin(base_url, 'json/reply') + "/"
+        self.oneway_base_url = urljoin(base_url, 'json/oneway') + "/"
+        self.headers = {'Accept': JSON_MIME_TYPE}
 
-    def create_url_from_dto(self, method:str, request:Any):
+    def create_url_from_dto(self, method: str, request: Any):
         url = urljoin(self.reply_base_url, nameof(request))
         if not has_request_body(method):
             url = append_querystring(url, request.__dict__)
         return url
 
-    def get(self,request,args=None):
-        return self.send(request,"GET",None,args)
-    def post(self,request,body=None,args=None):
-        return self.send(request,"POST",body,args)
-    def put(self,request,body=None,args=None):
-        return self.send(request,"PUT",body,args)
-    def patch(self,request,body=None,args=None):
-        return self.send(request,"PATCH",body,args)
-    def delete(self,request,args=None):
-        return self.send(request,"DELETE",None,args)
-    def options(self,request,args=None):
-        return self.send(request,"OPTIONS",None,args)
-    def head(self,request,args=None):
-        return self.send(request,"HEAD",None,args)
+    def get(self, request, args=None):
+        return self.send(request, "GET", None, args)
 
-    def to_absolute_url(self, path_or_url:str):
+    def post(self, request, body=None, args=None):
+        return self.send(request, "POST", body, args)
+
+    def put(self, request, body=None, args=None):
+        return self.send(request, "PUT", body, args)
+
+    def patch(self, request, body=None, args=None):
+        return self.send(request, "PATCH", body, args)
+
+    def delete(self, request, args=None):
+        return self.send(request, "DELETE", None, args)
+
+    def options(self, request, args=None):
+        return self.send(request, "OPTIONS", None, args)
+
+    def head(self, request, args=None):
+        return self.send(request, "HEAD", None, args)
+
+    def to_absolute_url(self, path_or_url: str):
         if path_or_url.startswith("http://") or path_or_url.startswith("https://"):
             return path_or_url
         return urljoin(self.base_url, path_or_url)
 
-    def get_url(self, path:str, response_as:Type, args:dict[str,Any]=None):
+    def get_url(self, path: str, response_as: Type, args: dict[str, Any] = None):
         return self.send_url(path, "GET", response_as, None, args)
-    def delete_url(self, path:str, response_as:Type, args:dict[str,Any]=None):
+
+    def delete_url(self, path: str, response_as: Type, args: dict[str, Any] = None):
         return self.send_url(path, "DELETE", response_as, None, args)
-    def options_url(self, path:str, response_as:Type, args:dict[str,Any]=None):
+
+    def options_url(self, path: str, response_as: Type, args: dict[str, Any] = None):
         return self.send_url(path, "OPTIONS", response_as, None, args)
-    def head_url(self, path:str, response_as:Type, args:dict[str,Any]=None):
+
+    def head_url(self, path: str, response_as: Type, args: dict[str, Any] = None):
         return self.send_url(path, "HEAD", response_as, None, args)
 
-    def post_url(self, path:str, body:Any=None, response_as:Type=None, args:dict[str,Any]=None):
+    def post_url(self, path: str, body: Any = None, response_as: Type = None, args: dict[str, Any] = None):
         return self.send_url(path, "POST", response_as, body, args)
-    def put_url(self, path:str, body:Any=None, response_as:Type=None, args:dict[str,Any]=None):
+
+    def put_url(self, path: str, body: Any = None, response_as: Type = None, args: dict[str, Any] = None):
         return self.send_url(path, "PUT", response_as, body, args)
-    def patch_url(self, path:str, body:Any=None, response_as:Type=None, args:dict[str,Any]=None):
+
+    def patch_url(self, path: str, body: Any = None, response_as: Type = None, args: dict[str, Any] = None):
         return self.send_url(path, "PATCH", response_as, body, args)
 
-    def send_url(self, path:str, method:str=None, response_as:Type=None, body=None, args:dict[str,Any]=None):
+    def send_url(self, path: str, method: str = None, response_as: Type = None, body=None, args: dict[str, Any] = None):
 
         if body and not response_as:
             response_as = _resolve_response_type(body)
@@ -354,7 +396,7 @@ class JsonServiceClient:
 
         return self.send_request(info)
 
-    def send(self,request,method="POST",body=None,args=None):
+    def send(self, request, method="POST", body=None, args=None):
         if not isinstance(request, IReturn) and not isinstance(request, IReturnVoid):
             raise TypeError(f"'{nameof(request)}' does not implement IReturn or IReturnVoid")
 
@@ -366,28 +408,28 @@ class JsonServiceClient:
             headers=self.headers,
             method=method or resolve_httpmethod(request),
             url=None,
-            request=request,            
+            request=request,
             body=body,
             body_string=None,
             args=args,
             response_as=response_as))
 
-    def assert_valid_batch_request(self, requests:list):
+    def assert_valid_batch_request(self, requests: list):
         if not isinstance(requests, list):
             raise TypeError(f"'{nameof(requests)}' is not a List")
 
         if len(requests) == 0: return []
 
-        request=requests[0]
+        request = requests[0]
         if not isinstance(request, IReturn) and not isinstance(request, IReturnVoid):
             raise TypeError(f"'{nameof(request)}' does not implement IReturn or IReturnVoid")
 
         item_response_as = _resolve_response_type(request)
         if item_response_as is None:
             raise TypeError(f"Could not resolve Response Type for '{nameof(request)}'")
-        return (request, item_response_as)
+        return request, item_response_as
 
-    def send_all(self,requests:List[IReturn[T]]):
+    def send_all(self, requests: List[IReturn[T]]):
         request, item_response_as = self.assert_valid_batch_request(requests)
         url = urljoin(self.reply_base_url, nameof(request) + "[]")
 
@@ -395,13 +437,13 @@ class JsonServiceClient:
             headers=self.headers,
             method="POST",
             url=url,
-            request=list(requests),            
+            request=list(requests),
             body=None,
             body_string=None,
             args=None,
             response_as=list.__class_getitem__(item_response_as)))
 
-    def send_all_oneway(self,requests:list):
+    def send_all_oneway(self, requests: list):
         request, item_response_as = self.assert_valid_batch_request(requests)
         url = urljoin(self.oneway_base_url, nameof(request) + "[]")
 
@@ -409,12 +451,12 @@ class JsonServiceClient:
             headers=self.headers,
             method="POST",
             url=url,
-            request=list(requests),            
+            request=list(requests),
             body=None,
             body_string=None,
             args=None,
             response_as=list.__class_getitem__(item_response_as)))
-        
+
     def _resend_request(self, info):
         if has_request_body(info.method):
             headers = info.headers.copy() if info.headers else []
@@ -425,7 +467,7 @@ class JsonServiceClient:
         response.raise_for_status()
         return response
 
-    def _create_response(self, response:Response, info:SendContext):
+    def _create_response(self, response: Response, info: SendContext):
 
         if info.response_filter:
             info.response_filter(response)
@@ -456,16 +498,16 @@ class JsonServiceClient:
 
         return res_dto
 
-    def _raise_error(self, res:Response, e:Exception) -> Exception:
+    def _raise_error(self, res: Response, e: Exception) -> Exception:
         if self.exception_filter:
-            self.exception_filter(res,e)
+            self.exception_filter(res, e)
         if JsonServiceClient.global_exception_filter:
-            JsonServiceClient.global_exception_filter(res,e)
+            JsonServiceClient.global_exception_filter(res, e)
         return e
 
-    def _handle_error(self, hold_res:Response, e:Exception) -> Exception:
+    def _handle_error(self, hold_res: Optional[Response], e: Exception):
         if type(e) == WebServiceException:
-            raise self._raise_error(e)
+            raise self._raise_error(hold_res, e)
 
         web_ex = WebServiceException()
         web_ex.inner_exception = e
@@ -473,11 +515,12 @@ class JsonServiceClient:
         web_ex.status_description = ex_message(e)
 
         res = hold_res
-        if type(e) == HTTPError and not e.response is None:
+        if type(e) == HTTPError and e.response is not None:
             res = e.response
 
-        if not res is None:
-            if Log.debug_enabled(): Log.debug(f"error.text: {res.text}")
+        if res is not None:
+            if Log.debug_enabled():
+                Log.debug(f"error.text: {res.text}")
             web_ex.status_code = res.status_code
             web_ex.status_description = res.reason
 
@@ -486,15 +529,15 @@ class JsonServiceClient:
                 message=res.reason)
 
             try:
-                error_response = from_json(EmptyResponse, res.text)
-                if not error_response is None:
+                error_response: EmptyResponse = from_json(EmptyResponse, res.text)
+                if error_response is not None:
                     web_ex.response_status = error_response.response_status
             except Exception as ex:
                 Log.error(f"Could not deserialize error response {res.text}", ex)
 
         raise self._raise_error(res, web_ex)
-        
-    def send_request(self, info:SendContext):
+
+    def send_request(self, info: SendContext):
         try:
             url = info.url
             body = info.body or info.request
@@ -512,7 +555,8 @@ class JsonServiceClient:
             if info.args:
                 url = append_querystring(url, info.args)
         except Exception as e:
-            if Log.debug_enabled(): Log.debug(f"send_request(): {ex_message(e)}")
+            if Log.debug_enabled():
+                Log.debug(f"send_request(): {ex_message(e)}")
             return self._handle_error(None, e)
 
         info.url = url
@@ -530,16 +574,16 @@ class JsonServiceClient:
                 info.body_string = to_json(body)
 
         Log.debug(f"info method: {info.method}, url: {info.url}, body_string: {info.body_string}")
-        response:Response = None
+        response: Optional[Response] = None
         try:
             response = self._resend_request(info)
-            res_dto = self._create_response(response,info)
-    
-            if Log.debug_enabled(): Log.debug(f"res_dto = {type(res_dto)}")
-    
+            res_dto = self._create_response(response, info)
+
+            if Log.debug_enabled():
+                Log.debug(f"res_dto = {type(res_dto)}")
+
             return res_dto
         except Exception as e:
-            if Log.debug_enabled(): Log.debug(f"send_request() create_response: {ex_message(e)}")
+            if Log.debug_enabled():
+                Log.debug(f"send_request() create_response: {ex_message(e)}")
             return self._handle_error(response, e)
-
-
