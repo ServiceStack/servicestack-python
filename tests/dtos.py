@@ -1,5 +1,5 @@
 """ Options:
-Date: 2021-07-10 18:34:32
+Date: 2021-07-10 18:48:21
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: https://localhost:5001
@@ -93,7 +93,7 @@ class IAuthTokens:
     refresh_token_expiry: Optional[DateTime] = None
     request_token: Optional[str] = None
     request_token_secret: Optional[str] = None
-    items: Optional[Dict[str,str]] = None
+    items: Optional[Dict[str, str]] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -142,7 +142,7 @@ class AuthUserSession:
     tag: int = 0
     auth_provider: Optional[str] = None
     provider_o_auth_access: Optional[List[IAuthTokens]] = None
-    meta: Optional[Dict[str,str]] = None
+    meta: Optional[Dict[str, str]] = None
     audiences: Optional[List[str]] = None
     scopes: Optional[List[str]] = None
     dns: Optional[str] = None
@@ -165,7 +165,7 @@ class NestedClass:
     value: Optional[str] = None
 
 
-class EnumType(str,Enum):
+class EnumType(str, Enum):
     VALUE1 = 'VALUE1'
     VALUE2 = 'VALUE2'
     VALUE3 = 'VALUE3'
@@ -178,7 +178,7 @@ class EnumTypeFlags(Enum):
     VALUE3 = 2
 
 
-class EnumWithValues(str,Enum):
+class EnumWithValues(str, Enum):
     NONE = 'None'
     VALUE1 = 'Member 1'
     VALUE2 = 'Value2'
@@ -199,7 +199,7 @@ class EnumAsInt(Enum):
     VALUE3 = 3000
 
 
-class EnumStyle(str,Enum):
+class EnumStyle(str, Enum):
     LOWER = 'LOWER'
     UPPER = 'UPPER'
     PASCAL_CASE = 'PASCAL_CASE'
@@ -208,7 +208,7 @@ class EnumStyle(str,Enum):
     PASCAL_U_P_P_E_R = 'PASCAL_U_P_P_E_R'
 
 
-class EnumStyleMembers(str,Enum):
+class EnumStyleMembers(str, Enum):
     LOWER = 'lower'
     UPPER = 'UPPER'
     PASCAL_CASE = 'PascalCase'
@@ -231,7 +231,7 @@ class AllTypesBase:
     nullable_id: Optional[int] = None
     byte: int = 0
     short: int = 0
-    int_: int = field(metadata=config(field_name='int'),default = 0)
+    int_: int = field(metadata=config(field_name='int'), default=0)
     long: int = 0
     u_short: int = 0
     u_int: int = 0
@@ -250,8 +250,8 @@ class AllTypesBase:
     nullable_time_span: Optional[TimeDelta] = None
     string_list: Optional[List[str]] = None
     string_array: Optional[List[str]] = None
-    string_map: Optional[Dict[str,str]] = None
-    int_string_map: Optional[Dict[int,str]] = None
+    string_map: Optional[Dict[str, str]] = None
+    int_string_map: Optional[Dict[int, str]] = None
     sub_type: Optional[SubType] = None
 
 
@@ -285,7 +285,7 @@ class EmptyClass:
     pass
 
 
-class DayOfWeek(str,Enum):
+class DayOfWeek(str, Enum):
     SUNDAY = 'SUNDAY'
     MONDAY = 'MONDAY'
     TUESDAY = 'TUESDAY'
@@ -344,11 +344,11 @@ Into = TypeVar('Into')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryDbTenant(Generic[From, Into],QueryDb2[From, Into]):
+class QueryDbTenant(Generic[From, Into], QueryDb2[From, Into]):
     pass
 
 
-class LivingStatus(str,Enum):
+class LivingStatus(str, Enum):
     ALIVE = 'ALIVE'
     DEAD = 'DEAD'
 
@@ -422,7 +422,7 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class CreateAuditBase(Generic[Table, TResponse],ICreateDb[Table]):
+class CreateAuditBase(Generic[Table, TResponse], ICreateDb[Table]):
     pass
 
 
@@ -432,7 +432,7 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class CreateAuditTenantBase(Generic[Table, TResponse],CreateAuditBase[Table, TResponse]):
+class CreateAuditTenantBase(Generic[Table, TResponse], CreateAuditBase[Table, TResponse]):
     pass
 
 
@@ -442,7 +442,7 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class UpdateAuditBase(Generic[Table, TResponse],IUpdateDb[Table]):
+class UpdateAuditBase(Generic[Table, TResponse], IUpdateDb[Table]):
     pass
 
 
@@ -452,7 +452,7 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class UpdateAuditTenantBase(Generic[Table, TResponse],UpdateAuditBase[Table, TResponse]):
+class UpdateAuditTenantBase(Generic[Table, TResponse], UpdateAuditBase[Table, TResponse]):
     pass
 
 
@@ -462,7 +462,7 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class PatchAuditBase(Generic[Table, TResponse],IPatchDb[Table]):
+class PatchAuditBase(Generic[Table, TResponse], IPatchDb[Table]):
     pass
 
 
@@ -472,7 +472,7 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class PatchAuditTenantBase(Generic[Table, TResponse],PatchAuditBase[Table, TResponse]):
+class PatchAuditTenantBase(Generic[Table, TResponse], PatchAuditBase[Table, TResponse]):
     pass
 
 
@@ -482,7 +482,7 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class SoftDeleteAuditBase(Generic[Table, TResponse],IUpdateDb[Table]):
+class SoftDeleteAuditBase(Generic[Table, TResponse], IUpdateDb[Table]):
     pass
 
 
@@ -492,7 +492,7 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class SoftDeleteAuditTenantBase(Generic[Table, TResponse],SoftDeleteAuditBase[Table, TResponse]):
+class SoftDeleteAuditTenantBase(Generic[Table, TResponse], SoftDeleteAuditBase[Table, TResponse]):
     pass
 
 
@@ -584,7 +584,7 @@ class InnerType:
     name: Optional[str] = None
 
 
-class InnerEnum(str,Enum):
+class InnerEnum(str, Enum):
     FOO = 'FOO'
     BAR = 'BAR'
     BAZ = 'BAZ'
@@ -680,7 +680,7 @@ class QueryResponseAlt(Generic[T]):
     offset: int = 0
     total: int = 0
     results: Optional[List[T]] = None
-    meta: Optional[Dict[str,str]] = None
+    meta: Optional[Dict[str, str]] = None
     response_status: Optional[ResponseStatus] = None
 
 
@@ -797,7 +797,7 @@ class AllTypes(IReturn["AllTypes"]):
     nullable_id: Optional[int] = None
     byte: int = 0
     short: int = 0
-    int_: int = field(metadata=config(field_name='int'),default = 0)
+    int_: int = field(metadata=config(field_name='int'), default=0)
     long: int = 0
     u_short: int = 0
     u_int: int = 0
@@ -816,8 +816,8 @@ class AllTypes(IReturn["AllTypes"]):
     nullable_time_span: Optional[TimeDelta] = None
     string_list: Optional[List[str]] = None
     string_array: Optional[List[str]] = None
-    string_map: Optional[Dict[str,str]] = None
-    int_string_map: Optional[Dict[int,str]] = None
+    string_map: Optional[Dict[str, str]] = None
+    int_string_map: Optional[Dict[int, str]] = None
     sub_type: Optional[SubType] = None
 
 
@@ -835,8 +835,8 @@ class AllCollectionTypes(IReturn["AllCollectionTypes"]):
     decimal_list: Optional[List[Decimal]] = None
     poco_array: Optional[List[Poco]] = None
     poco_list: Optional[List[Poco]] = None
-    poco_lookup: Optional[Dict[str,List[Poco]]] = None
-    poco_lookup_map: Optional[Dict[str,List[Dict[str,Poco]]]] = None
+    poco_lookup: Optional[Dict[str, List[Poco]]] = None
+    poco_lookup_map: Optional[Dict[str, List[Dict[str, Poco]]]] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -923,8 +923,8 @@ class EnumResponse:
 @dataclass
 class HelloTypes(IReturn["HelloTypes"]):
     string: Optional[str] = None
-    bool_: bool = field(metadata=config(field_name='bool'),default = False)
-    int_: int = field(metadata=config(field_name='int'),default = 0)
+    bool_: bool = field(metadata=config(field_name='bool'), default=False)
+    int_: int = field(metadata=config(field_name='int'), default=0)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -936,7 +936,7 @@ class HelloZipResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class PingResponse:
-    responses: Optional[Dict[str,ResponseStatus]] = None
+    responses: Optional[Dict[str, ResponseStatus]] = None
     response_status: Optional[ResponseStatus] = None
 
 
@@ -1017,7 +1017,7 @@ class Wait(IReturn["Wait"]):
 class EchoTypes(IReturn["EchoTypes"]):
     byte: int = 0
     short: int = 0
-    int_: int = field(metadata=config(field_name='int'),default = 0)
+    int_: int = field(metadata=config(field_name='int'), default=0)
     long: int = 0
     u_short: int = 0
     u_int: int = 0
@@ -1039,8 +1039,8 @@ class EchoTypes(IReturn["EchoTypes"]):
 class EchoCollections(IReturn["EchoCollections"]):
     string_list: Optional[List[str]] = None
     string_array: Optional[List[str]] = None
-    string_map: Optional[Dict[str,str]] = None
-    int_string_map: Optional[Dict[int,str]] = None
+    string_map: Optional[Dict[str, str]] = None
+    int_string_map: Optional[Dict[int, str]] = None
 
 
 # @Route("/echo/complex")
@@ -1049,9 +1049,9 @@ class EchoCollections(IReturn["EchoCollections"]):
 class EchoComplexTypes(IReturn["EchoComplexTypes"]):
     sub_type: Optional[SubType] = None
     sub_types: Optional[List[SubType]] = None
-    sub_type_map: Optional[Dict[str,SubType]] = None
-    string_map: Optional[Dict[str,str]] = None
-    int_string_map: Optional[Dict[int,str]] = None
+    sub_type_map: Optional[Dict[str, SubType]] = None
+    string_map: Optional[Dict[str, str]] = None
+    int_string_map: Optional[Dict[int, str]] = None
 
 
 # @Route("/rockstars", "POST")
@@ -1102,7 +1102,7 @@ class QueryItems(QueryDb2[Item, Poco]):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class PostRawToChannel(IReturnVoid):
-    from_: Optional[str] = field(metadata=config(field_name='from'),default = None)
+    from_: Optional[str] = field(metadata=config(field_name='from'), default=None)
     to_user_id: Optional[str] = None
     channel: Optional[str] = None
     message: Optional[str] = None
@@ -1113,7 +1113,7 @@ class PostRawToChannel(IReturnVoid):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class PostChatToChannel(IReturn[ChatMessage]):
-    from_: Optional[str] = field(metadata=config(field_name='from'),default = None)
+    from_: Optional[str] = field(metadata=config(field_name='from'), default=None)
     to_user_id: Optional[str] = None
     channel: Optional[str] = None
     message: Optional[str] = None
@@ -1521,11 +1521,11 @@ class HelloWithEnumList:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloWithEnumMap:
-    enum_prop: Optional[Dict[str,EnumType]] = None
-    enum_with_values: Optional[Dict[str,EnumWithValues]] = None
-    nullable_enum_prop: Optional[Dict[str,EnumType]] = None
-    enum_flags: Optional[Dict[str,EnumFlags]] = None
-    enum_style: Optional[Dict[str,EnumStyle]] = None
+    enum_prop: Optional[Dict[str, EnumType]] = None
+    enum_with_values: Optional[Dict[str, EnumWithValues]] = None
+    nullable_enum_prop: Optional[Dict[str, EnumType]] = None
+    enum_flags: Optional[Dict[str, EnumFlags]] = None
+    enum_style: Optional[Dict[str, EnumStyle]] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -1551,7 +1551,6 @@ class AllowedAttributes:
     """
     Range Description
     """
-
 
 
 # @Route("/all-types")

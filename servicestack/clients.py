@@ -2,6 +2,7 @@ import decimal
 import inspect
 import json
 import requests
+import typing
 from requests.exceptions import HTTPError
 from requests.models import Response
 
@@ -70,7 +71,8 @@ def append_querystring(url: str, args: dict[str, Any]):
     if args:
         for key in args:
             val = args[key]
-            if val is None: continue
+            if val is None:
+                continue
             url += '&' if '?' in url else '?'
             url += key + '=' + qsvalue(val)
     return url
@@ -107,7 +109,7 @@ def _json_encoder(obj: Any):
         return clean_any(asdict(obj))
     if hasattr(obj, '__dict__'):
         return vars(obj)
-    if isinstance(obj, (datetime.date, datetime)):
+    if isinstance(obj, datetime):
         return obj.isoformat()
     if isinstance(obj, timedelta):
         return to_timespan(obj)
@@ -128,8 +130,8 @@ class TypeConverters:
     deserializers: dict[Type, Callable[[Any], Any]]
 
     @staticmethod
-    def register(type: Type, converter: Callable[[Any], Any]):
-        TypeConverters.deserializers[type] = converter
+    def register_deserializer(cls: Type, deserializer: Callable[[Any], Any]):
+        TypeConverters.deserializers[cls] = deserializer
 
 
 TypeConverters.deserializers = {
@@ -160,9 +162,9 @@ def generic_args(cls: Type):
 
 def _resolve_forwardref(cls: Type, orig: Type = None):
     type_name = cls.__forward_arg__
-    if not orig is None and orig.__name__ == type_name:
+    if orig is not None and orig.__name__ == type_name:
         return orig
-    if not type_name in globals():
+    if type_name not in globals():
         raise TypeError(f"Could not resolve ForwardRef('{type_name}')")
     return globals()[type_name]
 
@@ -176,7 +178,8 @@ def unwrap(cls: Type):
 
 
 def dict_get(name: str, obj: dict, case: Callable[[str], str] = None):
-    if name in obj: return obj[name]
+    if name in obj:
+        return obj[name]
     if case:
         name_case = case(name)
         if name_case in obj:
@@ -192,16 +195,19 @@ def dict_get(name: str, obj: dict, case: Callable[[str], str] = None):
     return None
 
 
-def _resolve_type(cls: Type, substitute_types: Dict[str, type]):
-    if substitute_types is None: return cls
+def _resolve_type(cls: Type, substitute_types: Dict[Type, type]):
+    if substitute_types is None:
+        return cls
     return substitute_types[cls] if cls in substitute_types else cls
 
 
-def convert(into: Type, obj: Any, substitute_types: Dict[str, type] = None):
-    if obj is None: return None
+def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
+    if obj is None:
+        return None
     into = unwrap(into)
     into = _resolve_type(into, substitute_types)
-    if Log.debug_enabled(): Log.debug(f"convert({into}, {obj})")
+    if Log.debug_enabled():
+        Log.debug(f"convert({into}, {obj})")
 
     generic_def = get_origin(into)
     if generic_def is not None and is_dataclass(generic_def):
@@ -260,7 +266,8 @@ def convert(into: Type, obj: Any, substitute_types: Dict[str, type] = None):
 
 
 def from_json(into: Type, json_str: str):
-    if json_str is None or json_str == "": return None
+    if json_str is None or json_str == "":
+        return None
     json_obj = json.loads(json_str)
     return convert(into, json_obj)
 
@@ -332,25 +339,25 @@ class JsonServiceClient:
             url = append_querystring(url, request.__dict__)
         return url
 
-    def get(self, request, args=None):
+    def get(self, request: IReturn[T], args=None) -> T:
         return self.send(request, "GET", None, args)
 
-    def post(self, request, body=None, args=None):
+    def post(self, request: IReturn[T], body=None, args=None) -> T:
         return self.send(request, "POST", body, args)
 
-    def put(self, request, body=None, args=None):
+    def put(self, request: IReturn[T], body=None, args=None) -> T:
         return self.send(request, "PUT", body, args)
 
-    def patch(self, request, body=None, args=None):
+    def patch(self, request: IReturn[T], body=None, args=None) -> T:
         return self.send(request, "PATCH", body, args)
 
-    def delete(self, request, args=None):
+    def delete(self, request: IReturn[T], args=None) -> T:
         return self.send(request, "DELETE", None, args)
 
-    def options(self, request, args=None):
+    def options(self, request: IReturn[T], args=None) -> T:
         return self.send(request, "OPTIONS", None, args)
 
-    def head(self, request, args=None):
+    def head(self, request: IReturn[T], args=None) -> T:
         return self.send(request, "HEAD", None, args)
 
     def to_absolute_url(self, path_or_url: str):
@@ -418,7 +425,8 @@ class JsonServiceClient:
         if not isinstance(requests, list):
             raise TypeError(f"'{nameof(requests)}' is not a List")
 
-        if len(requests) == 0: return []
+        if len(requests) == 0:
+            return []
 
         request = requests[0]
         if not isinstance(request, IReturn) and not isinstance(request, IReturnVoid):
@@ -482,7 +490,8 @@ class JsonServiceClient:
             return response.content
 
         json_str = response.text
-        if Log.debug_enabled: Log.debug(f"json_str: {json_str}")
+        if Log.debug_enabled:
+            Log.debug(f"json_str: {json_str}")
 
         if into is None:
             return json.loads(json_str)
