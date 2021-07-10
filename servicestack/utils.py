@@ -19,31 +19,36 @@ def last_index_of(target: str, needle: str):
 
 
 def left_part(str_val: Optional[str], needle: str):
-    if str_val is None: return None
+    if str_val is None:
+        return None
     pos = index_of(str_val, needle)
     return str_val if pos == -1 else str_val[:pos]
 
 
 def right_part(str_val: Optional[str], needle: str):
-    if str_val is None: return None
+    if str_val is None:
+        return None
     pos = index_of(str_val, needle)
     return str_val if pos == -1 else str_val[pos + len(needle):]
 
 
 def last_left_part(str_val: Optional[str], needle: str):
-    if str_val is None: return None
+    if str_val is None:
+        return None
     pos = last_index_of(str_val, needle)
     return str_val if pos == -1 else str_val[:pos]
 
 
 def last_right_part(str_val: Optional[str], needle: str):
-    if str_val is None: return None
+    if str_val is None:
+        return None
     pos = last_index_of(str_val, needle)
     return str_val if pos == -1 else str_val[pos + len(needle):]
 
 
 def split_on_first(s: Optional[str], c: str):
-    if str is None or str == "": return [s]
+    if str is None or str == "":
+        return [s]
     pos = index_of(s, c)
     if pos >= 0:
         return [s[:pos], s[pos + 1:]]
@@ -51,7 +56,8 @@ def split_on_first(s: Optional[str], c: str):
 
 
 def split_on_last(s: Optional[str], c: str):
-    if str is None or str == "": return [s]
+    if str is None or str == "":
+        return [s]
     pos = last_index_of(s, c)
     if pos >= 0:
         return [s[:pos], s[pos + 1:]]
@@ -95,19 +101,20 @@ def to_timespan(duration: timedelta):
     return xsd
 
 
-def from_timespan(str: Optional[str]):
-    if str is None: return None
+def from_timespan(s: Optional[str]):
+    if s is None:
+        return None
     days = 0
     hours = 0
     minutes = 0
     seconds = 0
     ms = 0.0
 
-    if str[0] != "P":
-        raise ValueError(f"{str} is not a valid XSD Duration")
+    if s[0] != "P":
+        raise ValueError(f"{s} is not a valid XSD Duration")
 
-    str = str[1:]  # strip P
-    t = split_on_first(str, 'T')
+    s = s[1:]  # strip P
+    t = split_on_first(s, 'T')
     has_time = len(t) == 2
 
     d = split_on_first(t[0], 'D')
@@ -147,7 +154,6 @@ def from_datetime(json_date: str):
             epoch_str = last_left_part(epoch_and_zone, '-')
         if index_of(epoch_and_zone[1:], '+') >= 0:
             epoch_str = last_left_part(epoch_and_zone, '+')
-        # print(f"epoch_str = {epoch_str}")
         epoch = int(epoch_str)
         try:
             return datetime.fromtimestamp(epoch / 1000, timezone.utc)
@@ -195,4 +201,3 @@ def inspect_jwt(jwt: str):
     body = _decode_base64url_payload(left_part(right_part(jwt, '.'), '.'))
     exp = int(body['exp'])
     return head, body, datetime.fromtimestamp(exp, timezone.utc)
-
