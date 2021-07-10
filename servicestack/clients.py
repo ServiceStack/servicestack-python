@@ -9,7 +9,7 @@ from urllib.parse import urljoin, quote_plus
 import requests
 from requests.exceptions import HTTPError
 from requests.models import Response
-from stringcase import camelcase, snakecase
+from stringcase import camelcase, snakecase, uppercase
 
 from servicestack.dtos import *
 from servicestack.fields import *
@@ -29,17 +29,65 @@ def _dump(obj):
     print("")
 
 
+def _get_type_vars_map(cls: Type, type_map: Dict[Union[type, TypeVar], type] = {}):
+    if hasattr(cls, '__orig_bases__'):
+        for base_cls in cls.__orig_bases__:
+            _get_type_vars_map(base_cls, type_map)
+    generic_def = get_origin(cls)
+    if generic_def is not None:
+        generic_type_args = get_args(cls)
+        i = 0
+        for t in generic_def.__parameters__:
+            type_map[t] = generic_type_args[i]
+            i += 1
+    return type_map
+
+
+def _dict_with_string_keys(d: dict):
+    to = {}
+    for k, v in d.items():
+        to[f"{k}"] = v
+    return to
+
+
+def has_type_vars(cls: Type):
+    if cls is None:
+        return None
+    return isinstance(cls, TypeVar) or any(isinstance(x, TypeVar) for x in cls.__args__)
+
+
 def _resolve_response_type(request):
-    if isinstance(request, IReturn):
-        for cls in request.__orig_bases__:
-            if hasattr(cls, '__args__'):
-                candidate = cls.__args__[0]
-                if type(candidate) == ForwardRef:
-                    return _resolve_forwardref(candidate, type(request))
-                return candidate
-    if isinstance(request, IReturnVoid):
-        return type(None)
-    return None
+    t = type(request)
+
+    def resolve_response_type():
+        if isinstance(request, IReturn):
+            for cls in t.__orig_bases__:
+                if get_origin(cls) == IReturn and hasattr(cls, '__args__'):
+                    candidate = cls.__args__[0]
+                    if type(candidate) == ForwardRef:
+                        return _resolve_forwardref(candidate, type(request))
+                    return candidate
+        if isinstance(request, IReturnVoid):
+            return type(None)
+        return None
+
+    if hasattr(t, 'response_type'):
+        ret = t.response_type()
+        if has_type_vars(ret):
+            # avoid reifying type vars if request type has concrete type return marker
+            ret_candidate = resolve_response_type()
+            if not has_type_vars(ret_candidate):
+                return ret_candidate
+
+            type_map = _dict_with_string_keys(_get_type_vars_map(t))
+            if isinstance(ret, TypeVar):
+                return get_origin(ret).__class_getitem__(type_map[f"{ret}"])
+            reified_args = [type_map[f"{x}"] for x in ret.__args__]
+            reified_type = get_origin(ret).__class_getitem__(*reified_args)
+            return reified_type
+        return ret
+    else:
+        return resolve_response_type()
 
 
 def resolve_httpmethod(request):
@@ -64,6 +112,10 @@ def qsvalue(arg):
     if not arg:
         return ""
     arg_type = type(arg)
+    if is_list(arg_type):
+        return "[" + ','.join([qsvalue(x) for x in arg]) + "]"
+    if is_dict(arg_type):
+        return "{" + ','.join([k + ":" + qsvalue(v) for k, v in arg]) + "}"
     if arg_type is str:
         return quote_plus(arg)
     if arg_type is bytes or arg_type is bytearray:
@@ -199,6 +251,27 @@ def dict_get(name: str, obj: dict, case: Callable[[str], str] = None):
     return None
 
 
+def sanitize_name(s: str):
+    return s.replace('_', '').upper()
+
+
+def enum_get(cls: Enum, key: Union[str, int]):
+    if type(key) == int:
+        return cls[key]
+    try:
+        return cls[key]
+    except Exception as e:
+        try:
+            upper_snake = uppercase(snakecase(key))
+            return cls[upper_snake]
+        except Exception as e2:
+            sanitize_key = sanitize_name(key)
+            for member in cls.__members__.keys():
+                if sanitize_key == sanitize_name(member):
+                    return cls[member]
+    raise TypeError(f"{key} is not a member of {nameof(Enum)}")
+
+
 def _resolve_type(cls: Type, substitute_types: Dict[Type, type]):
     if substitute_types is None:
         return cls
@@ -211,16 +284,11 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
     into = unwrap(into)
     into = _resolve_type(into, substitute_types)
     if Log.debug_enabled():
-        Log.debug(f"convert({into}, {obj})")
+        Log.debug(f"convert({into}, {substitute_types}, {obj})")
 
     generic_def = get_origin(into)
     if generic_def is not None and is_dataclass(generic_def):
-        reified_types = {}
-        generic_type_args = get_args(into)
-        i = 0
-        for t in generic_def.__parameters__:
-            reified_types[t] = generic_type_args[i]
-            i += 1
+        reified_types = _get_type_vars_map(into)
         return convert(generic_def, obj, reified_types)
 
     if is_dataclass(into):
@@ -260,6 +328,13 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
                 return into().deserialize(obj)
             except Exception as e:
                 Log.error(f"into().deserialize(obj) {into}({obj})", e)
+                raise e
+        elif issubclass(into, Enum):
+            try:
+                return enum_get(into, obj)
+            except Exception as e:
+                print(into, type(into), obj, type(obj))
+                Log.error(f"Enum into[obj] {into}[{obj}]", e)
                 raise e
         else:
             try:
@@ -318,7 +393,8 @@ class SendContext:
                 # if "ss-tok" in self.session.cookies:
                 #     ss_tok = self.session.cookies["ss-tok"]
                 #     print('ss_tok', inspect_jwt(ss_tok))
-            Log.debug(f"{using}.request({self.method}): url={self.url}, headers={self.headers}, data={self.body_string}")
+            Log.debug(
+                f"{using}.request({self.method}): url={self.url}, headers={self.headers}, data={self.body_string}")
 
         response: Optional[Response] = None
         if has_request_body(self.method):
@@ -409,10 +485,12 @@ class JsonServiceClient:
         return None
 
     @property
-    def token_cookie(self): return self._get_cookie_value(SS_TOKEN_COOKIE)
+    def token_cookie(self):
+        return self._get_cookie_value(SS_TOKEN_COOKIE)
 
     @property
-    def refresh_token_cookie(self): return self._get_cookie_value(SS_REFRESH_TOKEN_COOKIE)
+    def refresh_token_cookie(self):
+        return self._get_cookie_value(SS_REFRESH_TOKEN_COOKIE)
 
     def create_url_from_dto(self, method: str, request: Any):
         url = urljoin(self.reply_base_url, nameof(request))
@@ -467,7 +545,8 @@ class JsonServiceClient:
     def patch_url(self, path: str, body: Any = None, response_as: Type = None, args: dict[str, Any] = None):
         return self.send_url(path, "PATCH", response_as, body, args)
 
-    def send_url(self, path: str, method: str = None, response_as: Type = None, body: Any = None, args: dict[str, Any] = None):
+    def send_url(self, path: str, method: str = None, response_as: Type = None, body: Any = None,
+                 args: dict[str, Any] = None):
 
         if body and not response_as:
             response_as = _resolve_response_type(body)

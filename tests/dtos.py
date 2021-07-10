@@ -1,5 +1,5 @@
 """ Options:
-Date: 2021-07-10 18:48:21
+Date: 2021-07-11 06:31:33
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: https://localhost:5001
@@ -422,8 +422,9 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class CreateAuditBase(Generic[Table, TResponse], ICreateDb[Table]):
-    pass
+class CreateAuditBase(Generic[Table, TResponse], IReturn[TResponse], ICreateDb[Table]):
+    @staticmethod
+    def response_type(): return TResponse
 
 
 Table = TypeVar('Table')
@@ -442,8 +443,9 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class UpdateAuditBase(Generic[Table, TResponse], IUpdateDb[Table]):
-    pass
+class UpdateAuditBase(Generic[Table, TResponse], IReturn[TResponse], IUpdateDb[Table]):
+    @staticmethod
+    def response_type(): return TResponse
 
 
 Table = TypeVar('Table')
@@ -462,8 +464,9 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class PatchAuditBase(Generic[Table, TResponse], IPatchDb[Table]):
-    pass
+class PatchAuditBase(Generic[Table, TResponse], IReturn[TResponse], IPatchDb[Table]):
+    @staticmethod
+    def response_type(): return TResponse
 
 
 Table = TypeVar('Table')
@@ -482,8 +485,9 @@ TResponse = TypeVar('TResponse')
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class SoftDeleteAuditBase(Generic[Table, TResponse], IUpdateDb[Table]):
-    pass
+class SoftDeleteAuditBase(Generic[Table, TResponse], IReturn[TResponse], IUpdateDb[Table]):
+    @staticmethod
+    def response_type(): return TResponse
 
 
 Table = TypeVar('Table')
@@ -1094,7 +1098,7 @@ class RockstarWithIdAndRowVersionResponse:
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryItems(QueryDb2[Item, Poco]):
+class QueryItems(QueryDb2[Item, Poco], IReturn[QueryResponse[Poco]]):
     pass
 
 
@@ -1912,34 +1916,34 @@ class QueryRockstarAudit(QueryDbTenant[RockstarAuditTenant, RockstarAuto], IRetu
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryRockstarAuditSubOr(QueryDb2[RockstarAuditTenant, RockstarAuto]):
+class QueryRockstarAuditSubOr(QueryDb2[RockstarAuditTenant, RockstarAuto], IReturn[QueryResponse[RockstarAuto]]):
     first_name_starts_with: Optional[str] = None
     age_older_than: Optional[int] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryPocoBase(QueryDb[OnlyDefinedInGenericType]):
+class QueryPocoBase(QueryDb[OnlyDefinedInGenericType], IReturn[QueryResponse[OnlyDefinedInGenericType]]):
     id: int = 0
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryPocoIntoBase(QueryDb2[OnlyDefinedInGenericTypeFrom, OnlyDefinedInGenericTypeInto]):
+class QueryPocoIntoBase(QueryDb2[OnlyDefinedInGenericTypeFrom, OnlyDefinedInGenericTypeInto], IReturn[QueryResponse[OnlyDefinedInGenericTypeInto]]):
     id: int = 0
 
 
 # @Route("/message/query/{Id}", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class MessageQuery(QueryDb["MessageQuery"]):
+class MessageQuery(QueryDb["MessageQuery"], IReturn[QueryResponse["MessageQuery"]]):
     id: int = 0
 
 
 # @Route("/rockstars", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryRockstars(QueryDb[Rockstar]):
+class QueryRockstars(QueryDb[Rockstar], IReturn[QueryResponse[Rockstar]]):
     pass
 
 

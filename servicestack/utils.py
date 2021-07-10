@@ -163,7 +163,26 @@ def from_datetime(json_date: str):
             else:
                 return _MAX_UTC_DATE
 
-    return datetime.fromisoformat(json_date)
+    # need to reduce to 6f precision and remove trailing Z
+    has_sec_fraction = index_of(json_date, '.') >= 0
+    is_utc = json_date.endswith('Z')
+    if is_utc:
+        json_date = json_date[0:-1]
+    if has_sec_fraction:
+        sec_fraction = last_right_part(json_date, '.')
+        tz = ''
+        if '+' in sec_fraction:
+            tz = '+' + right_part(sec_fraction, '+')
+            sec_fraction = left_part(sec_fraction, '+')
+        elif '-' in sec_fraction:
+            sec_fraction = left_part(sec_fraction, '-')
+        if len(sec_fraction) > 6:
+            json_date = last_left_part(json_date, '.') + '.' + sec_fraction[0:6] + tz
+
+    if is_utc:
+        return datetime.fromisoformat(json_date).replace(tzinfo=timezone.utc)
+    else:
+        return datetime.fromisoformat(json_date)
 
 
 def to_bytearray(value: Optional[bytes]):

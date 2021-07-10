@@ -123,48 +123,54 @@ class QueryBase:
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryDb(Generic[T], QueryBase):
-    pass
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class QueryDb1(Generic[T], QueryBase):
-    pass
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class QueryDb2(Generic[From, Into], QueryBase):
-    pass
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class QueryData(Generic[T], QueryBase):
-    pass
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class QueryData1(Generic[From, Into], QueryBase):
-    pass
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class QueryData2(Generic[From, Into], QueryBase):
-    pass
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
 class QueryResponse(Generic[T]):
     offset: int = None
     total: int = None
     results: List[T] = None
     meta: Optional[Dict[str, str]] = None
     response_status: Optional[ResponseStatus] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class QueryDb(Generic[T], QueryBase, IReturn[QueryResponse[T]]):
+    @staticmethod
+    def response_type(): return QueryResponse[T]
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class QueryDb1(Generic[T], QueryBase, IReturn[QueryResponse[T]]):
+    @staticmethod
+    def response_type(): return QueryResponse[T]
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class QueryDb2(Generic[From, Into], QueryBase, IReturn[QueryResponse[Into]]):
+    @staticmethod
+    def response_type(): return QueryResponse[Into]
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class QueryData(Generic[T], QueryBase, IReturn[QueryResponse[T]]):
+    @staticmethod
+    def response_type(): return QueryResponse[T]
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class QueryData1(Generic[From, Into], QueryBase, IReturn[QueryResponse[Into]]):
+    @staticmethod
+    def response_type(): return QueryResponse[Into]
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class QueryData2(Generic[From, Into], QueryBase, IReturn[QueryResponse[Into]]):
+    @staticmethod
+    def response_type(): return QueryResponse[Into]
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
