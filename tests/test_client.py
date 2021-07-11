@@ -75,6 +75,55 @@ def create_EchoComplexTypes():
     )
 
 
+def assert_AllTypes(test: unittest.TestCase, dto: AllTypes):
+    # print(type(dto))
+    # print(vars(dto))
+    test.assertEqual(dto.id, 1)
+    test.assertEqual(dto.byte, 2)
+    test.assertEqual(dto.short, 3)
+    test.assertEqual(dto.int_, 4)
+    test.assertEqual(dto.long, 5)
+    test.assertEqual(dto.u_short, 6)
+    test.assertEqual(dto.u_int, 7)
+    test.assertEqual(dto.u_long, 8)
+    test.assertEqual(dto.float_, 1.1)
+    test.assertEqual(dto.double, 2.2)
+    test.assertEqual(dto.decimal, 3.0)
+    test.assertEqual(dto.string, "string")
+    test.assertEqual(dto.date_time, datetime(2001, 1, 1, tzinfo=timezone.utc))
+    test.assertEqual(dto.date_time_offset, datetime(2001, 1, 1, tzinfo=timezone.utc))
+    test.assertEqual(dto.time_span, timedelta(hours=1))
+    test.assertEqual(dto.guid, "ea762009b66c410b9bf5ce21ad519249")
+    test.assertListEqual(dto.string_list, ["A", "B", "C"])
+    test.assertListEqual(dto.string_array, ["D", "E", "F"])
+    test.assertDictEqual(dto.string_map, {"A": "D", "B": "E", "C": "F"})
+    test.assertDictEqual(dto.int_string_map, {1: "A", 2: "B", 3: "C"})
+    test.assertEqual(dto.sub_type.id, 1)
+    test.assertEqual(dto.sub_type.name, "name")
+
+
+def assert_AllCollectionTypes(test: unittest.TestCase, dto: AllCollectionTypes):
+    test.assertListEqual(dto.int_array, [1, 2, 3])
+    test.assertListEqual(dto.int_list, [1, 2, 3])
+    test.assertListEqual(dto.string_array, ["A", "B", "C"])
+    test.assertListEqual(dto.string_list, ["D", "E", "F"])
+    test.assertEqual(dto.byte_array, b'ABC')
+    test.assertEqual(len(dto.poco_array), 1)
+    test.assertEqual(dto.poco_array[0].name, "pocoArray")
+    test.assertEqual(len(dto.poco_lookup), 1)
+    poco_lookup_values = dto.poco_lookup["A"]
+    test.assertEqual(len(poco_lookup_values), 2)
+    test.assertEqual(poco_lookup_values[0].name, "B")
+    test.assertEqual(poco_lookup_values[1].name, "C")
+    test.assertEqual(len(dto.poco_lookup_map), 1)
+    poco_lookup_map_values = dto.poco_lookup_map["A"]
+    test.assertEqual(len(poco_lookup_map_values), 1)
+    poco_lookup_mapa_list = poco_lookup_map_values[0]
+    test.assertEqual(len(poco_lookup_mapa_list), 2)
+    test.assertEqual(poco_lookup_mapa_list["B"].name, "C")
+    test.assertEqual(poco_lookup_mapa_list["D"].name, "E")
+
+
 client = create_test_client()
 
 
@@ -86,52 +135,10 @@ class TestApi(unittest.TestCase):
         self.assert_AllTypes(dto.all_types)
         self.assert_AllCollectionTypes(dto.all_collection_types)
 
-    def assert_AllTypes(self, dto: AllTypes):
-        # print(type(dto))
-        # print(vars(dto))
-        self.assertEqual(dto.id, 1)
-        self.assertEqual(dto.byte, 2)
-        self.assertEqual(dto.short, 3)
-        self.assertEqual(dto.int_, 4)
-        self.assertEqual(dto.long, 5)
-        self.assertEqual(dto.u_short, 6)
-        self.assertEqual(dto.u_int, 7)
-        self.assertEqual(dto.u_long, 8)
-        self.assertEqual(dto.float_, 1.1)
-        self.assertEqual(dto.double, 2.2)
-        self.assertEqual(dto.decimal, 3.0)
-        self.assertEqual(dto.string, "string")
-        self.assertEqual(dto.date_time, datetime(2001, 1, 1, tzinfo=timezone.utc))
-        self.assertEqual(dto.date_time_offset, datetime(2001, 1, 1, tzinfo=timezone.utc))
-        self.assertEqual(dto.time_span, timedelta(hours=1))
-        self.assertEqual(dto.guid, "ea762009b66c410b9bf5ce21ad519249")
-        self.assertListEqual(dto.string_list, ["A", "B", "C"])
-        self.assertListEqual(dto.string_array, ["D", "E", "F"])
-        self.assertDictEqual(dto.string_map, {"A": "D", "B": "E", "C": "F"})
-        self.assertDictEqual(dto.int_string_map, {1: "A", 2: "B", 3: "C"})
-        self.assertEqual(dto.sub_type.id, 1)
-        self.assertEqual(dto.sub_type.name, "name")
+    def assert_AllTypes(self, dto: AllTypes): assert_AllTypes(self, dto)
 
     def assert_AllCollectionTypes(self, dto: AllCollectionTypes):
-        self.assertListEqual(dto.int_array, [1, 2, 3])
-        self.assertListEqual(dto.int_list, [1, 2, 3])
-        self.assertListEqual(dto.string_array, ["A", "B", "C"])
-        self.assertListEqual(dto.string_list, ["D", "E", "F"])
-        self.assertEqual(dto.byte_array, b'ABC')
-        self.assertEqual(len(dto.poco_array), 1)
-        self.assertEqual(dto.poco_array[0].name, "pocoArray")
-        self.assertEqual(len(dto.poco_lookup), 1)
-        poco_lookup_values = dto.poco_lookup["A"]
-        self.assertEqual(len(poco_lookup_values), 2)
-        self.assertEqual(poco_lookup_values[0].name, "B")
-        self.assertEqual(poco_lookup_values[1].name, "C")
-        self.assertEqual(len(dto.poco_lookup_map), 1)
-        poco_lookup_map_values = dto.poco_lookup_map["A"]
-        self.assertEqual(len(poco_lookup_map_values), 1)
-        poco_lookup_mapa_list = poco_lookup_map_values[0]
-        self.assertEqual(len(poco_lookup_mapa_list), 2)
-        self.assertEqual(poco_lookup_mapa_list["B"].name, "C")
-        self.assertEqual(poco_lookup_mapa_list["D"].name, "E")
+        assert_AllCollectionTypes(self, dto)
 
     def assert_EchoComplexTypes(self, dto: EchoComplexTypes):
         self.assertEqual(dto.sub_type.id, 1)

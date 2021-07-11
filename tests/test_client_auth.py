@@ -2,7 +2,6 @@
 """
 
 import unittest
-from datetime import datetime
 
 from servicestack import WebServiceException
 from .config import *
@@ -92,7 +91,7 @@ class TestAuthClient(unittest.TestCase):
         ]
 
         create_expired_jwt = create_jwt()
-        create_expired_jwt.jwt_expiry = datetime(2000, 1, 1)
+        create_expired_jwt.jwt_expiry = datetime.datetime(2000, 1, 1)
         expired_jwt: CreateJwtResponse = client.post(create_expired_jwt)
 
         client.bearer_token = expired_jwt.token
@@ -109,7 +108,7 @@ class TestAuthClient(unittest.TestCase):
         client.set_credentials(None, None)
 
         create_expired_jwt = create_jwt()
-        create_expired_jwt.jwt_expiry = datetime(2000, 1, 1)
+        create_expired_jwt.jwt_expiry = datetime.datetime(2000, 1, 1)
         expired_jwt: CreateJwtResponse = client.post(create_expired_jwt)
 
         client.bearer_token = expired_jwt.token
@@ -125,7 +124,7 @@ class TestAuthClient(unittest.TestCase):
         refresh_token = auth_response.refresh_token
 
         create_expired_jwt = create_jwt()
-        create_expired_jwt.jwt_expiry = datetime(2000, 1, 1)
+        create_expired_jwt.jwt_expiry = datetime.datetime(2000, 1, 1)
         expired_jwt: CreateJwtResponse = client.post(create_expired_jwt)
         bearer_token = expired_jwt.token
 
@@ -183,7 +182,7 @@ class TestAuthClient(unittest.TestCase):
         client = create_test_client()
 
         create_expired_jwt = create_jwt()
-        create_expired_jwt.jwt_expiry = datetime(2000, 1, 1)
+        create_expired_jwt.jwt_expiry = datetime.datetime(2000, 1, 1)
         expired_jwt: CreateJwtResponse = client.post(create_expired_jwt)
         client.refresh_token = expired_jwt.token
 
