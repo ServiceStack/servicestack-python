@@ -1,5 +1,5 @@
 """ Options:
-Date: 2021-07-11 14:07:23
+Date: 2021-07-11 17:01:34
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: https://techstacks.io
@@ -12,7 +12,7 @@ BaseUrl: https://techstacks.io
 #AddDescriptionAsComments: True
 #IncludeTypes: 
 #ExcludeTypes: 
-#DefaultImports: datetime,decimal,marshmallow.fields:*,servicestack:*,typing:*,dataclasses:dataclass/field,dataclasses_json:dataclass_json/LetterCase/Undefined/config,enum:Enum
+#DefaultImports: datetime,decimal,marshmallow.fields:*,servicestack:*,typing:*,dataclasses:dataclass/field,dataclasses_json:dataclass_json/LetterCase/Undefined/config,enum:Enum/IntEnum
 #DataClass: 
 #DataClassJson: 
 """
@@ -24,7 +24,7 @@ from servicestack import *
 from typing import *
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json, LetterCase, Undefined, config
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 class PostType(str, Enum):
@@ -55,8 +55,8 @@ class Post:
 
     pin_comment_id: Optional[int] = None
     technology_ids: Optional[List[int]] = None
-    from_date: Optional[DateTime] = None
-    to_date: Optional[DateTime] = None
+    from_date: Optional[datetime.datetime] = None
+    to_date: Optional[datetime.datetime] = None
     location: Optional[str] = None
     meta_type: Optional[str] = None
     meta: Optional[str] = None
@@ -79,23 +79,23 @@ class Post:
     ref_user_ids: Optional[List[int]] = None
     ref_links: Optional[List[str]] = None
     mute_user_ids: Optional[List[int]] = None
-    last_comment_date: Optional[DateTime] = None
+    last_comment_date: Optional[datetime.datetime] = None
     last_comment_id: Optional[int] = None
     last_comment_user_id: Optional[int] = None
-    deleted: Optional[DateTime] = None
+    deleted: Optional[datetime.datetime] = None
     deleted_by: Optional[str] = None
-    locked: Optional[DateTime] = None
+    locked: Optional[datetime.datetime] = None
     locked_by: Optional[str] = None
-    hidden: Optional[DateTime] = None
+    hidden: Optional[datetime.datetime] = None
     hidden_by: Optional[str] = None
     status: Optional[str] = None
-    status_date: Optional[DateTime] = None
+    status_date: Optional[datetime.datetime] = None
     status_by: Optional[str] = None
     archived: bool = False
-    bumped: Optional[DateTime] = None
-    created: DateTime = datetime.datetime(1, 1, 1)
+    bumped: Optional[datetime.datetime] = None
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     created_by: Optional[str] = None
-    modified: DateTime = datetime.datetime(1, 1, 1)
+    modified: datetime.datetime = datetime.datetime(1, 1, 1)
     modified_by: Optional[str] = None
     ref_id: Optional[int] = None
     ref_source: Optional[str] = None
@@ -116,7 +116,7 @@ class FlagType(str, Enum):
     OTHER = 'Other'
 
 
-class Frequency(Enum):
+class Frequency(IntEnum):
     DAILY = 1
     WEEKLY = 7
     MONTHLY = 30
@@ -145,16 +145,16 @@ class TechnologyBase:
     product_url: Optional[str] = None
     logo_url: Optional[str] = None
     description: Optional[str] = None
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     created_by: Optional[str] = None
-    last_modified: DateTime = datetime.datetime(1, 1, 1)
+    last_modified: datetime.datetime = datetime.datetime(1, 1, 1)
     last_modified_by: Optional[str] = None
     owner_id: Optional[str] = None
     slug: Optional[str] = None
     logo_approved: bool = False
     is_locked: bool = False
     tier: Optional[TechnologyTier] = None
-    last_status_update: Optional[DateTime] = None
+    last_status_update: Optional[datetime.datetime] = None
     organization_id: Optional[int] = None
     comments_post_id: Optional[int] = None
     view_count: int = 0
@@ -177,16 +177,16 @@ class TechnologyView:
     product_url: Optional[str] = None
     logo_url: Optional[str] = None
     description: Optional[str] = None
-    created: Optional[DateTime] = None
+    created: Optional[datetime.datetime] = None
     created_by: Optional[str] = None
-    last_modified: Optional[DateTime] = None
+    last_modified: Optional[datetime.datetime] = None
     last_modified_by: Optional[str] = None
     owner_id: Optional[str] = None
     slug: Optional[str] = None
     logo_approved: Optional[bool] = None
     is_locked: Optional[bool] = None
     tier: Optional[TechnologyTier] = None
-    last_status_update: Optional[DateTime] = None
+    last_status_update: Optional[datetime.datetime] = None
     organization_id: Optional[int] = None
     comments_post_id: Optional[int] = None
     view_count: Optional[int] = None
@@ -206,9 +206,9 @@ class TechnologyStackBase:
     description: Optional[str] = None
     app_url: Optional[str] = None
     screenshot_url: Optional[str] = None
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     created_by: Optional[str] = None
-    last_modified: DateTime = datetime.datetime(1, 1, 1)
+    last_modified: datetime.datetime = datetime.datetime(1, 1, 1)
     last_modified_by: Optional[str] = None
     is_locked: bool = False
     owner_id: Optional[str] = None
@@ -219,7 +219,7 @@ class TechnologyStackBase:
     # @StringLength(2147483647)
     details_html: Optional[str] = None
 
-    last_status_update: Optional[DateTime] = None
+    last_status_update: Optional[datetime.datetime] = None
     organization_id: Optional[int] = None
     comments_post_id: Optional[int] = None
     view_count: int = 0
@@ -241,16 +241,16 @@ class TechnologyStackView:
     description: Optional[str] = None
     app_url: Optional[str] = None
     screenshot_url: Optional[str] = None
-    created: Optional[DateTime] = None
+    created: Optional[datetime.datetime] = None
     created_by: Optional[str] = None
-    last_modified: Optional[DateTime] = None
+    last_modified: Optional[datetime.datetime] = None
     last_modified_by: Optional[str] = None
     is_locked: Optional[bool] = None
     owner_id: Optional[str] = None
     slug: Optional[str] = None
     details: Optional[str] = None
     details_html: Optional[str] = None
-    last_status_update: Optional[DateTime] = None
+    last_status_update: Optional[datetime.datetime] = None
     organization_id: Optional[int] = None
     comments_post_id: Optional[int] = None
     view_count: Optional[int] = None
@@ -264,8 +264,8 @@ class UserVoiceUser:
     name: Optional[str] = None
     email: Optional[str] = None
     avatar_url: Optional[str] = None
-    created_at: DateTime = datetime.datetime(1, 1, 1)
-    updated_at: DateTime = datetime.datetime(1, 1, 1)
+    created_at: datetime.datetime = datetime.datetime(1, 1, 1)
+    updated_at: datetime.datetime = datetime.datetime(1, 1, 1)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -273,7 +273,7 @@ class UserVoiceUser:
 class UserVoiceComment:
     text: Optional[str] = None
     formatted_text: Optional[str] = None
-    created_at: DateTime = datetime.datetime(1, 1, 1)
+    created_at: datetime.datetime = datetime.datetime(1, 1, 1)
     creator: Optional[UserVoiceUser] = None
 
 
@@ -297,10 +297,10 @@ class PostComment:
     favorites: int = 0
     word_count: int = 0
     report_count: int = 0
-    deleted: Optional[DateTime] = None
-    hidden: Optional[DateTime] = None
-    modified: DateTime = datetime.datetime(1, 1, 1)
-    created: DateTime = datetime.datetime(1, 1, 1)
+    deleted: Optional[datetime.datetime] = None
+    hidden: Optional[datetime.datetime] = None
+    modified: datetime.datetime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     created_by: Optional[str] = None
     ref_id: Optional[int] = None
     ref_source: Optional[str] = None
@@ -340,15 +340,15 @@ class Organization:
     rank: int = 0
     ref_id: Optional[int] = None
     ref_source: Optional[str] = None
-    hidden: Optional[DateTime] = None
+    hidden: Optional[datetime.datetime] = None
     hidden_by: Optional[str] = None
-    locked: Optional[DateTime] = None
+    locked: Optional[datetime.datetime] = None
     locked_by: Optional[str] = None
-    deleted: Optional[DateTime] = None
+    deleted: Optional[datetime.datetime] = None
     deleted_by: Optional[str] = None
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     created_by: Optional[str] = None
-    modified: DateTime = datetime.datetime(1, 1, 1)
+    modified: datetime.datetime = datetime.datetime(1, 1, 1)
     modified_by: Optional[str] = None
 
 
@@ -399,7 +399,7 @@ class OrganizationMemberInvite:
     organization_id: int = 0
     user_id: int = 0
     user_name: Optional[str] = None
-    dismissed: Optional[DateTime] = None
+    dismissed: Optional[datetime.datetime] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -412,10 +412,10 @@ class PostReportInfo:
     user_name: Optional[str] = None
     flag_type: Optional[FlagType] = None
     report_notes: Optional[str] = None
-    created: DateTime = datetime.datetime(1, 1, 1)
-    acknowledged: Optional[DateTime] = None
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
+    acknowledged: Optional[datetime.datetime] = None
     acknowledged_by: Optional[str] = None
-    dismissed: Optional[DateTime] = None
+    dismissed: Optional[datetime.datetime] = None
     dismissed_by: Optional[str] = None
     title: Optional[str] = None
     report_count: int = 0
@@ -433,10 +433,10 @@ class PostCommentReportInfo:
     user_name: Optional[str] = None
     flag_type: Optional[FlagType] = None
     report_notes: Optional[str] = None
-    created: DateTime = datetime.datetime(1, 1, 1)
-    acknowledged: Optional[DateTime] = None
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
+    acknowledged: Optional[datetime.datetime] = None
     acknowledged_by: Optional[str] = None
-    dismissed: Optional[DateTime] = None
+    dismissed: Optional[datetime.datetime] = None
     dismissed_by: Optional[str] = None
     content_html: Optional[str] = None
     report_count: int = 0
@@ -464,8 +464,8 @@ class OrganizationSubscription:
     post_types: Optional[List[str]] = None
     frequency_days: Optional[int] = None
     last_synced_id: Optional[int] = None
-    last_synced: Optional[DateTime] = None
-    created: DateTime = datetime.datetime(1, 1, 1)
+    last_synced: Optional[datetime.datetime] = None
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -485,8 +485,8 @@ class UserActivity:
     pinned_comment_count: int = 0
     post_report_count: int = 0
     post_comment_report_count: int = 0
-    created: DateTime = datetime.datetime(1, 1, 1)
-    modified: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
+    modified: datetime.datetime = datetime.datetime(1, 1, 1)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -567,7 +567,7 @@ class OrganizationInfo:
     lang: Optional[str] = None
     post_types: Optional[List[str]] = None
     moderator_post_types: Optional[List[str]] = None
-    locked: Optional[DateTime] = None
+    locked: Optional[datetime.datetime] = None
     labels: Optional[List[LabelInfo]] = None
     categories: Optional[List[CategoryInfo]] = None
 
@@ -821,7 +821,7 @@ class UserPostCommentReportResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class SessionInfoResponse:
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     id: Optional[str] = None
     referrer_url: Optional[str] = None
     user_auth_id: Optional[str] = None
@@ -831,8 +831,8 @@ class SessionInfoResponse:
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     email: Optional[str] = None
-    created_at: DateTime = datetime.datetime(1, 1, 1)
-    last_modified: DateTime = datetime.datetime(1, 1, 1)
+    created_at: datetime.datetime = datetime.datetime(1, 1, 1)
+    last_modified: datetime.datetime = datetime.datetime(1, 1, 1)
     roles: Optional[List[str]] = None
     permissions: Optional[List[str]] = None
     is_authenticated: bool = False
@@ -868,7 +868,7 @@ class GetAllTechnologiesResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class GetTechnologyResponse:
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     technology: Optional[Technology] = None
     technology_stacks: Optional[List[TechnologyStack]] = None
     response_status: Optional[ResponseStatus] = None
@@ -927,7 +927,7 @@ class HourlyTaskResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class OverviewResponse:
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     top_users: Optional[List[UserInfo]] = None
     top_technologies: Optional[List[TechnologyInfo]] = None
     latest_tech_stacks: Optional[List[TechStackDetails]] = None
@@ -940,7 +940,7 @@ class OverviewResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class AppOverviewResponse:
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     all_tiers: Optional[List[Option]] = None
     top_technologies: Optional[List[TechnologyInfo]] = None
     response_status: Optional[ResponseStatus] = None
@@ -956,7 +956,7 @@ class GetAllTechnologyStacksResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class GetTechnologyStackResponse:
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     result: Optional[TechStackDetails] = None
     response_status: Optional[ResponseStatus] = None
 
@@ -1039,7 +1039,7 @@ class GetUsersKarmaResponse:
 class GetUserInfoResponse:
     id: int = 0
     user_name: Optional[str] = None
-    created: DateTime = datetime.datetime(1, 1, 1)
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
     avatar_url: Optional[str] = None
     tech_stacks: Optional[List[TechnologyStack]] = None
     favorite_tech_stacks: Optional[List[TechnologyStack]] = None
@@ -1361,8 +1361,8 @@ class CreatePost(IReturn[CreatePostResponse], IPost):
     lock: Optional[bool] = None
     technology_ids: Optional[List[int]] = None
     labels: Optional[List[str]] = None
-    from_date: Optional[DateTime] = None
-    to_date: Optional[DateTime] = None
+    from_date: Optional[datetime.datetime] = None
+    to_date: Optional[datetime.datetime] = None
     meta_type: Optional[str] = None
     meta: Optional[str] = None
     ref_id: Optional[int] = None
@@ -1385,8 +1385,8 @@ class UpdatePost(IReturn[UpdatePostResponse], IPut):
     lock: Optional[bool] = None
     technology_ids: Optional[List[int]] = None
     labels: Optional[List[str]] = None
-    from_date: Optional[DateTime] = None
-    to_date: Optional[DateTime] = None
+    from_date: Optional[datetime.datetime] = None
+    to_date: Optional[datetime.datetime] = None
     meta_type: Optional[str] = None
     meta: Optional[str] = None
 
@@ -1993,14 +1993,14 @@ class ImportUserVoiceSuggestion(IReturn[ImportUserVoiceSuggestionResponse], IPos
     text: Optional[str] = None
     formatted_text: Optional[str] = None
     vote_count: int = 0
-    closed_at: Optional[DateTime] = None
+    closed_at: Optional[datetime.datetime] = None
     status_key: Optional[str] = None
     status_hex_color: Optional[str] = None
     status_changed_by: Optional[UserVoiceUser] = None
     creator: Optional[UserVoiceUser] = None
     response: Optional[UserVoiceComment] = None
-    created_at: DateTime = datetime.datetime(1, 1, 1)
-    updated_at: DateTime = datetime.datetime(1, 1, 1)
+    created_at: datetime.datetime = datetime.datetime(1, 1, 1)
+    updated_at: datetime.datetime = datetime.datetime(1, 1, 1)
 
 
 # @Route("/posts/comment", "GET")
