@@ -1,19 +1,28 @@
+import base64
+import datetime
 import decimal
 import inspect
-import typing
-from dataclasses import field, fields, asdict, is_dataclass
+import json
+from dataclasses_json import dataclass_json
+from dataclasses import dataclass, field, fields, asdict, is_dataclass
+from datetime import datetime, timedelta
 from enum import Enum, IntEnum
 from typing import Callable, get_args, Type, get_origin, ForwardRef, Union
+from typing import TypeVar, Optional, Dict, List, Any
 from urllib.parse import urljoin, quote_plus
 
+import marshmallow.fields as mf
 import requests
 from requests.exceptions import HTTPError
 from requests.models import Response
 from stringcase import camelcase, snakecase, uppercase
 
-from servicestack.dtos import *
-from servicestack.fields import *
+from servicestack.dtos import IReturn, IReturnVoid, IGet, IPost, IPut, IPatch, \
+    IDelete, ResponseStatus, EmptyResponse, GetAccessToken, GetAccessTokenResponse
 from servicestack.log import Log
+from servicestack.utils import is_list, is_dict, to_timespan, to_datetime, \
+    to_bytearray, from_bytearray, from_datetime, from_timespan, is_optional, \
+    generic_args, generic_arg
 
 JSON_MIME_TYPE = "application/json"
 AUTHORIZATION_HEADER = "Authorization"
@@ -120,8 +129,8 @@ def qsvalue(arg):
         return "{" + ','.join([k + ":" + qsvalue(v) for k, v in arg]) + "}"
     if arg_type is str:
         return quote_plus(arg)
-    if arg_type is bytes or arg_type is bytearray:
-        return base64.b64encode(arg).decode("utf-8")
+    if arg_type in TypeConverters.serializers:
+        return TypeConverters.serialize(arg)
     return quote_plus(str(arg))
 
 
@@ -132,7 +141,9 @@ def append_querystring(url: str, args: dict[str, Any]):
             if val is None:
                 continue
             url += '&' if '?' in url else '?'
-            url += key + '=' + qsvalue(val)
+            qs_val = qsvalue(val)
+            if qs_val is not None:
+                url += key + '=' + qs_val
     return url
 
 
@@ -142,6 +153,19 @@ def has_request_body(method: str):
 
 def _empty(x):
     return x is None or x == {} or x == []
+
+
+def _asdict(obj: Any):
+    if obj is None:
+        return {}
+    if is_dataclass(obj):
+        d = asdict(obj)
+        to = {}
+        for k, v in d.items():
+            to[camelcase(k)] = v
+    else:
+        to = obj.__dict__
+    return clean_any(to)
 
 
 def _clean_list(d: list):
@@ -164,7 +188,7 @@ def clean_any(d):
 
 def _json_encoder(obj: Any):
     if is_dataclass(obj):
-        return clean_any(asdict(obj))
+        return _asdict(obj)
     if hasattr(obj, '__dict__'):
         return vars(obj)
     if isinstance(obj, datetime):
@@ -187,16 +211,50 @@ def to_json(obj: Any):
 
 
 class TypeConverters:
+    serializers: dict[Type, Callable[[Any], Any]]
     deserializers: dict[Type, Callable[[Any], Any]]
 
     @staticmethod
-    def register_deserializer(cls: Type, deserializer: Callable[[Any], Any]):
-        TypeConverters.deserializers[cls] = deserializer
+    def register(cls: Type, serializer: Callable[[Any], Any] = None, deserializer: Callable[[Any], Any] = None):
+        if serializer is not None:
+            TypeConverters.serializers[cls] = serializer
+        if deserializer is not None:
+            TypeConverters.deserializers[cls] = deserializer
+
+    @staticmethod
+    def serialize(obj: Any):
+        cls = type(obj)
+        if cls in TypeConverters.serializers:
+            serializer = TypeConverters.serializers[cls]
+            try:
+                return serializer(obj)
+            except Exception as e:
+                Log.error(f"serializer(obj) {cls}({obj})", e)
+                raise e
+
+    @staticmethod
+    def deserialize(cls: Type, obj: Any):
+        deserializer = TypeConverters.deserializers[cls]
+        try:
+            return deserializer(obj)
+        except Exception as e:
+            Log.error(f"deserializer(obj) {cls}({obj})", e)
+            raise e
 
 
+TypeConverters.serializers = {
+    datetime: to_datetime,
+    timedelta: to_timespan,
+    bytes: to_bytearray,
+    bytearray: to_bytearray,
+}
 TypeConverters.deserializers = {
     mf.DateTime: from_datetime,
     mf.TimeDelta: from_timespan,
+    datetime: from_datetime,
+    timedelta: from_timespan,
+    bytes: from_bytearray,
+    bytearray: from_bytearray,
 }
 
 
@@ -239,7 +297,7 @@ def sanitize_name(s: str):
     return s.replace('_', '').upper()
 
 
-def enum_get(cls: Enum, key: Union[str, int]):
+def enum_get(cls: Union[Enum, Type], key: Union[str, int]):
     if type(key) == int or issubclass(cls, IntEnum):
         return cls(key)
     try:
@@ -490,7 +548,7 @@ class JsonServiceClient:
     def create_url_from_dto(self, method: str, request: Any):
         url = urljoin(self.reply_base_url, nameof(request))
         if not has_request_body(method):
-            url = append_querystring(url, request.__dict__)
+            url = append_querystring(url, _asdict(request))
         return url
 
     def get(self, request: IReturn[T], args: Dict[str, Any] = None) -> T:
@@ -723,7 +781,7 @@ class JsonServiceClient:
                 body_not_request_dto = info.request and info.body
                 if body_not_request_dto:
                     url = urljoin(self.reply_base_url, nameof(info.request))
-                    url = append_querystring(url, clean_any(asdict(info.request)))
+                    url = append_querystring(url, _asdict(info.request))
                 else:
                     url = self.create_url_from_dto(info.method, body)
 

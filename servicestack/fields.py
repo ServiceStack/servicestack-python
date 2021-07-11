@@ -1,4 +1,4 @@
-from servicestack.utils import *
+from servicestack.utils import to_bytearray, from_bytearray
 import marshmallow.fields as mf
 
 

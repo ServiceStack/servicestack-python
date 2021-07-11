@@ -1,5 +1,5 @@
 """ Options:
-Date: 2021-07-11 12:33:01
+Date: 2021-07-11 16:07:21
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: https://test.servicestack.net
@@ -90,7 +90,7 @@ class IAuthTokens:
     access_token: Optional[str] = None
     access_token_secret: Optional[str] = None
     refresh_token: Optional[str] = None
-    refresh_token_expiry: Optional[DateTime] = None
+    refresh_token_expiry: Optional[datetime.datetime] = None
     request_token: Optional[str] = None
     request_token_secret: Optional[str] = None
     items: Optional[Dict[str, str]] = None
@@ -115,7 +115,7 @@ class AuthUserSession:
     email: Optional[str] = None
     primary_email: Optional[str] = None
     phone_number: Optional[str] = None
-    birth_date: Optional[DateTime] = None
+    birth_date: Optional[datetime.datetime] = None
     birth_date_raw: Optional[str] = None
     address: Optional[str] = None
     address2: Optional[str] = None
@@ -131,8 +131,8 @@ class AuthUserSession:
     postal_code: Optional[str] = None
     time_zone: Optional[str] = None
     request_token_secret: Optional[str] = None
-    created_at: DateTime = datetime.datetime(1, 1, 1)
-    last_modified: DateTime = datetime.datetime(1, 1, 1)
+    created_at: datetime.datetime = datetime.datetime(1, 1, 1)
+    last_modified: datetime.datetime = datetime.datetime(1, 1, 1)
     roles: Optional[List[str]] = None
     permissions: Optional[List[str]] = None
     is_authenticated: bool = False
@@ -236,18 +236,18 @@ class AllTypesBase:
     u_short: int = 0
     u_int: int = 0
     u_long: int = 0
-    float: Float = 0.0
-    double: Float = 0.0
+    float_: float = field(metadata=config(field_name='float'), default=0.0)
+    double: float = 0.0
     decimal: Decimal = decimal.Decimal(0)
     string: Optional[str] = None
-    date_time: DateTime = datetime.datetime(1, 1, 1)
-    time_span: TimeDelta = datetime.timedelta()
-    date_time_offset: DateTime = datetime.datetime(1, 1, 1)
+    date_time: datetime.datetime = datetime.datetime(1, 1, 1)
+    time_span: datetime.timedelta = datetime.timedelta()
+    date_time_offset: datetime.datetime = datetime.datetime(1, 1, 1)
     guid: Optional[str] = None
     char: Optional[str] = None
     key_value_pair: Optional[KeyValuePair[str, str]] = None
-    nullable_date_time: Optional[DateTime] = None
-    nullable_time_span: Optional[TimeDelta] = None
+    nullable_date_time: Optional[datetime.datetime] = None
+    nullable_time_span: Optional[datetime.timedelta] = None
     string_list: Optional[List[str]] = None
     string_array: Optional[List[str]] = None
     string_map: Optional[Dict[str, str]] = None
@@ -361,8 +361,8 @@ class RockstarAuditTenant(AuditBase):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     age: Optional[int] = None
-    date_of_birth: DateTime = datetime.datetime(1, 1, 1)
-    date_died: Optional[DateTime] = None
+    date_of_birth: datetime.datetime = datetime.datetime(1, 1, 1)
+    date_died: Optional[datetime.datetime] = None
     living_status: Optional[LivingStatus] = None
 
 
@@ -372,8 +372,8 @@ class RockstarBase:
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     age: Optional[int] = None
-    date_of_birth: DateTime = datetime.datetime(1, 1, 1)
-    date_died: Optional[DateTime] = None
+    date_of_birth: datetime.datetime = datetime.datetime(1, 1, 1)
+    date_died: Optional[datetime.datetime] = None
     living_status: Optional[LivingStatus] = None
 
 
@@ -408,10 +408,10 @@ class OnlyDefinedInGenericTypeInto:
 @dataclass
 class RockstarAudit(RockstarBase):
     id: int = 0
-    created_date: DateTime = datetime.datetime(1, 1, 1)
+    created_date: datetime.datetime = datetime.datetime(1, 1, 1)
     created_by: Optional[str] = None
     created_info: Optional[str] = None
-    modified_date: DateTime = datetime.datetime(1, 1, 1)
+    modified_date: datetime.datetime = datetime.datetime(1, 1, 1)
     modified_by: Optional[str] = None
     modified_info: Optional[str] = None
 
@@ -652,7 +652,7 @@ class GetUserDetailsResponse:
     company: Optional[str] = None
     email: Optional[str] = None
     phone_number: Optional[str] = None
-    birth_date: Optional[DateTime] = None
+    birth_date: Optional[datetime.datetime] = None
     birth_date_raw: Optional[str] = None
     address: Optional[str] = None
     address2: Optional[str] = None
@@ -806,18 +806,18 @@ class AllTypes(IReturn["AllTypes"]):
     u_short: int = 0
     u_int: int = 0
     u_long: int = 0
-    float: Float = 0.0
-    double: Float = 0.0
+    float_: float = field(metadata=config(field_name='float'), default=0.0)
+    double: float = 0.0
     decimal: Decimal = decimal.Decimal(0)
     string: Optional[str] = None
-    date_time: DateTime = datetime.datetime(1, 1, 1)
-    time_span: TimeDelta = datetime.timedelta()
-    date_time_offset: DateTime = datetime.datetime(1, 1, 1)
+    date_time: datetime.datetime = datetime.datetime(1, 1, 1)
+    time_span: datetime.timedelta = datetime.timedelta()
+    date_time_offset: datetime.datetime = datetime.datetime(1, 1, 1)
     guid: Optional[str] = None
     char: Optional[str] = None
     key_value_pair: Optional[KeyValuePair[str, str]] = None
-    nullable_date_time: Optional[DateTime] = None
-    nullable_time_span: Optional[TimeDelta] = None
+    nullable_date_time: Optional[datetime.datetime] = None
+    nullable_time_span: Optional[datetime.timedelta] = None
     string_list: Optional[List[str]] = None
     string_array: Optional[List[str]] = None
     string_map: Optional[Dict[str, str]] = None
@@ -832,9 +832,9 @@ class AllCollectionTypes(IReturn["AllCollectionTypes"]):
     int_list: Optional[List[int]] = None
     string_array: Optional[List[str]] = None
     string_list: Optional[List[str]] = None
-    float_array: Optional[List[Float]] = None
-    double_list: Optional[List[Float]] = None
-    byte_array: Optional[Bytes] = None
+    float_array: Optional[List[float]] = None
+    double_list: Optional[List[float]] = None
+    byte_array: Optional[bytes] = None
     char_array: Optional[List[str]] = None
     decimal_list: Optional[List[Decimal]] = None
     poco_array: Optional[List[Poco]] = None
@@ -860,7 +860,7 @@ class SubAllTypes(AllTypesBase):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloDateTime(IReturn["HelloDateTime"]):
-    date_time: DateTime = datetime.datetime(1, 1, 1)
+    date_time: datetime.datetime = datetime.datetime(1, 1, 1)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -970,8 +970,8 @@ class GetSessionResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class GetStuffResponse:
-    summary_date: Optional[DateTime] = None
-    summary_end_date: Optional[DateTime] = None
+    summary_date: Optional[datetime.datetime] = None
+    summary_end_date: Optional[datetime.datetime] = None
     symbol: Optional[str] = None
     email: Optional[str] = None
     is_enabled: Optional[bool] = None
@@ -1026,13 +1026,13 @@ class EchoTypes(IReturn["EchoTypes"]):
     u_short: int = 0
     u_int: int = 0
     u_long: int = 0
-    float: Float = 0.0
-    double: Float = 0.0
+    float_: float = field(metadata=config(field_name='float'), default=0.0)
+    double: float = 0.0
     decimal: Decimal = decimal.Decimal(0)
     string: Optional[str] = None
-    date_time: DateTime = datetime.datetime(1, 1, 1)
-    time_span: TimeDelta = datetime.timedelta()
-    date_time_offset: DateTime = datetime.datetime(1, 1, 1)
+    date_time: datetime.datetime = datetime.datetime(1, 1, 1)
+    time_span: datetime.timedelta = datetime.timedelta()
+    date_time_offset: datetime.datetime = datetime.datetime(1, 1, 1)
     guid: Optional[str] = None
     char: Optional[str] = None
 
@@ -1311,35 +1311,35 @@ class GetProject(IReturn[Project]):
 # @Route("/image-stream")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class ImageAsStream(IReturn[Bytes]):
+class ImageAsStream(IReturn[bytes]):
     format: Optional[str] = None
 
 
 # @Route("/image-bytes")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class ImageAsBytes(IReturn[Bytes]):
+class ImageAsBytes(IReturn[bytes]):
     format: Optional[str] = None
 
 
 # @Route("/image-custom")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class ImageAsCustomResult(IReturn[Bytes]):
+class ImageAsCustomResult(IReturn[bytes]):
     format: Optional[str] = None
 
 
 # @Route("/image-response")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class ImageWriteToResponse(IReturn[Bytes]):
+class ImageWriteToResponse(IReturn[bytes]):
     format: Optional[str] = None
 
 
 # @Route("/image-file")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class ImageAsFile(IReturn[Bytes]):
+class ImageAsFile(IReturn[bytes]):
     format: Optional[str] = None
 
 
@@ -1353,7 +1353,7 @@ class ImageAsRedirect:
 # @Route("/hello-image/{Name}")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class HelloImage(IReturn[Bytes]):
+class HelloImage(IReturn[bytes]):
     name: Optional[str] = None
     format: Optional[str] = None
     width: Optional[int] = None
@@ -1376,7 +1376,7 @@ class Secured(IReturn[SecuredResponse]):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class CreateJwt(AuthUserSession, IReturn[CreateJwtResponse]):
-    jwt_expiry: Optional[DateTime] = None
+    jwt_expiry: Optional[datetime.datetime] = None
 
 
 # @Route("/jwt-refresh")
@@ -1384,7 +1384,7 @@ class CreateJwt(AuthUserSession, IReturn[CreateJwtResponse]):
 @dataclass
 class CreateRefreshJwt(IReturn[CreateRefreshJwtResponse]):
     user_auth_id: Optional[str] = None
-    jwt_expiry: Optional[DateTime] = None
+    jwt_expiry: Optional[datetime.datetime] = None
 
 
 # @Route("/jwt-invalidate")
@@ -1549,7 +1549,7 @@ class AllowedAttributes:
     """
 
     # @ApiMember(DataType="double", Description="Range Description", IsRequired=true, ParameterType="path")
-    range: Float = 0.0
+    range: float = 0.0
     """
     Range Description
     """
@@ -1737,15 +1737,15 @@ class ReturnString(IReturn[str]):
 # @Route("/return/bytes")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class ReturnBytes(IReturn[Bytes]):
-    data: Optional[Bytes] = None
+class ReturnBytes(IReturn[bytes]):
+    data: Optional[bytes] = None
 
 
 # @Route("/return/stream")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class ReturnStream(IReturn[Bytes]):
-    data: Optional[Bytes] = None
+class ReturnStream(IReturn[bytes]):
+    data: Optional[bytes] = None
 
 
 # @Route("/Request1", "GET")
@@ -1782,7 +1782,7 @@ class SendText(IReturn[str]):
 # @Route("/sendraw")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class SendRaw(IReturn[Bytes]):
+class SendRaw(IReturn[bytes]):
     id: int = 0
     name: Optional[str] = None
     content_type: Optional[str] = None
@@ -1844,10 +1844,10 @@ class UpdateSession(IReturn[GetSessionResponse]):
 @dataclass
 class GetStuff(IReturn[GetStuffResponse]):
     # @ApiMember(DataType="DateTime", Name="Summary Date")
-    summary_date: Optional[DateTime] = None
+    summary_date: Optional[datetime.datetime] = None
 
     # @ApiMember(DataType="DateTime", Name="Summary End Date")
-    summary_end_date: Optional[DateTime] = None
+    summary_end_date: Optional[datetime.datetime] = None
 
     # @ApiMember(DataType="string", Name="Symbol")
     symbol: Optional[str] = None
@@ -1958,8 +1958,8 @@ class CreateRockstarAuditTenant(CreateAuditTenantBase[RockstarAuditTenant, Rocks
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     age: Optional[int] = None
-    date_of_birth: DateTime = datetime.datetime(1, 1, 1)
-    date_died: Optional[DateTime] = None
+    date_of_birth: datetime.datetime = datetime.datetime(1, 1, 1)
+    date_died: Optional[datetime.datetime] = None
     living_status: Optional[LivingStatus] = None
 
 

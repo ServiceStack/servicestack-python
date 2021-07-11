@@ -10,6 +10,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict, Any, Type, get_origin, Union, get_args
 from dataclasses import dataclass, field, asdict
 from functools import reduce
+from .log import Log
 
 
 def is_optional(cls: Type): return get_origin(cls) is Union and type(None) in get_args(cls)
@@ -170,6 +171,14 @@ def from_timespan(s: Optional[str]):
 _MIN_UTC_DATE = datetime.min.replace(tzinfo=timezone.utc)
 _MIN_EPOCH = _MIN_UTC_DATE.timestamp()
 _MAX_UTC_DATE = datetime.max.replace(tzinfo=timezone.utc)
+
+
+def to_datetime(date: datetime):
+    try:
+        return f"/Date({int(date.timestamp() * 1000)})/"
+    except Exception as e:
+        Log.debug(f"to_datetime({date}): e")
+        return None
 
 
 def from_datetime(json_date: str):

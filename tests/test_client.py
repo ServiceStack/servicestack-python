@@ -28,9 +28,9 @@ def create_AllTypes():
         u_short=6,
         u_int=7,
         u_long=8,
-        float=1.1,
+        float_=1.1,
         double=2.2,
-        decimal=3.0,
+        decimal=decimal.Decimal(3.0),
         string="string",
         date_time=datetime(2001, 1, 1, tzinfo=timezone.utc),
         date_time_offset=datetime(2001, 1, 1, tzinfo=timezone.utc),
@@ -97,7 +97,7 @@ class TestApi(unittest.TestCase):
         self.assertEqual(dto.u_short, 6)
         self.assertEqual(dto.u_int, 7)
         self.assertEqual(dto.u_long, 8)
-        self.assertEqual(dto.float, 1.1)
+        self.assertEqual(dto.float_, 1.1)
         self.assertEqual(dto.double, 2.2)
         self.assertEqual(dto.decimal, 3.0)
         self.assertEqual(dto.string, "string")
