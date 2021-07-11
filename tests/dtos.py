@@ -1,20 +1,20 @@
 """ Options:
-Date: 2021-07-11 10:30:38
+Date: 2021-07-11 12:33:01
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: https://test.servicestack.net
 
-#GlobalNamespace:
+#GlobalNamespace: 
 #MakePropertiesOptional: False
 #AddServiceStackTypes: True
 #AddResponseStatus: False
-#AddImplicitVersion:
+#AddImplicitVersion: 
 #AddDescriptionAsComments: True
-#IncludeTypes:
-#ExcludeTypes:
-#DefaultImports: datetime,decimal,marshmallow.fields:*,servicestack:*,typing:*,dataclasses:dataclass/field,dataclasses_json:dataclass_json/LetterCase/Undefined/config,enum:Enum
-#DataClass:
-#DataClassJson:
+#IncludeTypes: 
+#ExcludeTypes: 
+#DefaultImports: datetime,decimal,marshmallow.fields:*,servicestack:*,typing:*,dataclasses:dataclass/field,dataclasses_json:dataclass_json/LetterCase/Undefined/config,enum:Enum/IntEnum
+#DataClass: 
+#DataClassJson: 
 """
 
 import datetime
@@ -24,7 +24,7 @@ from servicestack import *
 from typing import *
 from dataclasses import dataclass, field
 from dataclasses_json import dataclass_json, LetterCase, Undefined, config
-from enum import Enum
+from enum import Enum, IntEnum
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -172,7 +172,7 @@ class EnumType(str, Enum):
 
 
 # @Flags()
-class EnumTypeFlags(Enum):
+class EnumTypeFlags(IntEnum):
     VALUE1 = 0
     VALUE2 = 1
     VALUE3 = 2
@@ -185,15 +185,15 @@ class EnumWithValues(str, Enum):
 
 
 # @Flags()
-class EnumFlags(Enum):
-    VALUE0 = 'Value0'
-    VALUE1 = 'Value 1'
-    VALUE2 = 'Value2'
-    VALUE3 = 'Value3'
-    VALUE123 = 'Value123'
+class EnumFlags(IntEnum):
+    VALUE0 = 0
+    VALUE1 = 1
+    VALUE2 = 2
+    VALUE3 = 4
+    VALUE123 = 7
 
 
-class EnumAsInt(Enum):
+class EnumAsInt(IntEnum):
     VALUE1 = 1000
     VALUE2 = 2000
     VALUE3 = 3000
@@ -295,7 +295,7 @@ class DayOfWeek(str, Enum):
     SATURDAY = 'Saturday'
 
 
-class ScopeType(Enum):
+class ScopeType(IntEnum):
     GLOBAL_ = 1
     SALE = 2
 
@@ -2005,3 +2005,4 @@ class RealDeleteAuditTenant(IReturn[RockstarWithIdAndCountResponse], IDeleteDb[R
 @dataclass
 class CreateRockstarVersion(RockstarBase, IReturn[RockstarWithIdAndRowVersionResponse], ICreateDb[RockstarVersion]):
     pass
+

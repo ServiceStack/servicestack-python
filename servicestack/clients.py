@@ -2,7 +2,7 @@ import decimal
 import inspect
 import typing
 from dataclasses import field, fields, asdict, is_dataclass
-from enum import Enum
+from enum import Enum, IntEnum
 from typing import Callable, get_args, Type, get_origin, ForwardRef, Union
 from urllib.parse import urljoin, quote_plus
 
@@ -29,7 +29,9 @@ def _dump(obj):
     print("")
 
 
-def _get_type_vars_map(cls: Type, type_map: Dict[Union[type, TypeVar], type] = {}):
+def _get_type_vars_map(cls: Type, type_map=None):
+    if type_map is None:
+        type_map = {}
     if hasattr(cls, '__orig_bases__'):
         for base_cls in cls.__orig_bases__:
             _get_type_vars_map(base_cls, type_map)
@@ -178,7 +180,9 @@ def _json_encoder(obj: Any):
 
 def to_json(obj: Any):
     if is_dataclass(obj):
-        return json.dumps(clean_any(obj.to_dict()), default=_json_encoder)
+        obj_dict = clean_any(obj.to_dict())
+        print(obj_dict)
+        return json.dumps(obj_dict, default=_json_encoder)
     return json.dumps(obj, default=_json_encoder)
 
 
@@ -236,8 +240,8 @@ def sanitize_name(s: str):
 
 
 def enum_get(cls: Enum, key: Union[str, int]):
-    if type(key) == int:
-        return cls[key]
+    if type(key) == int or issubclass(cls, IntEnum):
+        return cls(key)
     try:
         return cls[key]
     except Exception as e:
@@ -246,6 +250,9 @@ def enum_get(cls: Enum, key: Union[str, int]):
             return cls[upper_snake]
         except Exception as e2:
             sanitize_key = sanitize_name(key)
+            for value in cls.__members__.values():
+                if sanitize_key == sanitize_name(value):
+                    return value
             for member in cls.__members__.keys():
                 if sanitize_key == sanitize_name(member):
                     return cls[member]
@@ -265,6 +272,10 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
     into = _resolve_type(into, substitute_types)
     if Log.debug_enabled():
         Log.debug(f"convert({into}, {substitute_types}, {obj})")
+
+    is_type = type(into) == type
+    if not is_type:
+        Log.debug(f"type of {into} is not a class")
 
     generic_def = get_origin(into)
     if generic_def is not None and is_dataclass(generic_def):
@@ -290,6 +301,8 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
         key_type = _resolve_type(key_type, substitute_types)
         val_type = _resolve_type(val_type, substitute_types)
         to = {}
+        if not hasattr(obj, 'items'):
+            Log.warn(f"dict {obj} ({type(type)}) does not have items()")
         for key, val in obj.items():
             to_key = convert(key_type, key, substitute_types)
             to_val = convert(val_type, val, substitute_types)
@@ -309,7 +322,7 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
             except Exception as e:
                 Log.error(f"into().deserialize(obj) {into}({obj})", e)
                 raise e
-        elif issubclass(into, Enum):
+        elif is_type and issubclass(into, Enum):
             try:
                 return enum_get(into, obj)
             except Exception as e:
@@ -320,6 +333,8 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
             try:
                 return into(obj)
             except Exception as e:
+                # if into == typing.Dict or get_origin(into) == typing.Dict:
+                #     print("WAS A typing.Dict")
                 Log.error(f"into(obj) {into}({obj})", e)
                 raise e
 

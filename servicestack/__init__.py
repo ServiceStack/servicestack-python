@@ -60,8 +60,14 @@ __all__ = [
     'WebServiceExceptionType',
     'to_json',
     'from_json',
+    'convert',
     'qsvalue',
     'resolve_httpmethod',
+    'is_optional',
+    'is_list',
+    'is_dict',
+    'generic_args',
+    'generic_arg',
     'index_of',
     'last_index_of',
     'left_part',
@@ -75,11 +81,18 @@ __all__ = [
     'from_datetime',
     'to_bytearray',
     'from_bytearray',
+    'from_base64url_safe',
+    'inspect_jwt',
+    'inspect_vars',
+    'dump',
+    'printdump',
+    'dumptable',
+    'printdumptable',
     'Bytes',
 ]
 
 from .dtos import *
 from .clients import TypeConverters, JsonServiceClient, WebServiceException, WebServiceExceptionType, to_json, \
-    from_json, qsvalue, resolve_httpmethod
+    from_json, convert, qsvalue, resolve_httpmethod
 from .utils import *
 from .fields import *

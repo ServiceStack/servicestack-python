@@ -1,20 +1,20 @@
 """ Options:
-Date: 2021-07-11 08:30:48
+Date: 2021-07-11 10:33:03
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: https://techstacks.io
 
-#GlobalNamespace:
+#GlobalNamespace: 
 #MakePropertiesOptional: False
 #AddServiceStackTypes: True
 #AddResponseStatus: False
-#AddImplicitVersion:
+#AddImplicitVersion: 
 #AddDescriptionAsComments: True
-#IncludeTypes:
-#ExcludeTypes:
+#IncludeTypes: 
+#ExcludeTypes: 
 #DefaultImports: datetime,decimal,marshmallow.fields:*,servicestack:*,typing:*,dataclasses:dataclass/field,dataclasses_json:dataclass_json/LetterCase/Undefined/config,enum:Enum
-#DataClass:
-#DataClassJson:
+#DataClass: 
+#DataClassJson: 
 """
 
 import datetime
@@ -2021,3 +2021,4 @@ class QueryPostComments(QueryDb[PostComment], IReturn[QueryResponse[PostComment]
     word_count_below: Optional[int] = None
     report_count_above: Optional[int] = None
     report_count_below: Optional[int] = None
+
