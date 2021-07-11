@@ -120,9 +120,11 @@ def nameof(instance):
 
 
 def qsvalue(arg):
-    if not arg:
+    if arg is None:
         return ""
     arg_type = type(arg)
+    if arg_type == bool:
+        return f"{arg}".lower()
     if is_list(arg_type):
         return "[" + ','.join([qsvalue(x) for x in arg]) + "]"
     if is_dict(arg_type):
@@ -138,6 +140,7 @@ def append_querystring(url: str, args: dict[str, Any]):
     if args:
         for key in args:
             val = args[key]
+            # print("append_querystring", key, val)
             if val is None:
                 continue
             url += '&' if '?' in url else '?'
@@ -155,14 +158,17 @@ def _empty(x):
     return x is None or x == {} or x == []
 
 
-def _asdict(obj: Any):
+def to_dict(obj: Any):
     if obj is None:
         return {}
     if is_dataclass(obj):
         d = asdict(obj)
         to = {}
         for k, v in d.items():
-            to[camelcase(k)] = v
+            use_key = camelcase(k)
+            if use_key[-1] == '_':
+                use_key = use_key[0:-1]
+            to[use_key] = v
     else:
         to = obj.__dict__
     return clean_any(to)
@@ -188,7 +194,7 @@ def clean_any(d):
 
 def _json_encoder(obj: Any):
     if is_dataclass(obj):
-        return _asdict(obj)
+        return to_dict(obj)
     if hasattr(obj, '__dict__'):
         return vars(obj)
     if isinstance(obj, datetime):
@@ -548,7 +554,7 @@ class JsonServiceClient:
     def create_url_from_dto(self, method: str, request: Any):
         url = urljoin(self.reply_base_url, nameof(request))
         if not has_request_body(method):
-            url = append_querystring(url, _asdict(request))
+            url = append_querystring(url, to_dict(request))
         return url
 
     def get(self, request: IReturn[T], args: Dict[str, Any] = None) -> T:
@@ -781,7 +787,7 @@ class JsonServiceClient:
                 body_not_request_dto = info.request and info.body
                 if body_not_request_dto:
                     url = urljoin(self.reply_base_url, nameof(info.request))
-                    url = append_querystring(url, _asdict(info.request))
+                    url = append_querystring(url, to_dict(info.request))
                 else:
                     url = self.create_url_from_dto(info.method, body)
 

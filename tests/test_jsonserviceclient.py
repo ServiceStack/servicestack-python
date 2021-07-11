@@ -1,13 +1,8 @@
 """JsonServiceClient Tests
 """
-import operator
 import unittest
-from dataclasses_json import dataclass_json, LetterCase, Undefined, config
-import dataclasses
 
-import requests
-from dataclasses_json import config, dataclass_json, Undefined
-
+from servicestack.clients import append_querystring
 from servicestack.utils import *
 from tests.config import *
 from .dtos import *
@@ -33,3 +28,9 @@ class TestJsonServiceClient(unittest.TestCase):
         request = EchoTypes(date_time=datetime.datetime(2015, 1, 1, tzinfo=timezone.utc))
         response: EchoTypes = client.get(request)
         self.assertEqual(response.date_time, request.date_time)
+
+    def test_should_generate_default_value(self):
+        client = create_test_client()
+        request = HelloTypes(bool_=False, int_=0)
+        request_url = append_querystring(TEST_URL, to_dict(request))
+        self.assertEqual(request_url, TEST_URL + "?bool=false&int=0")

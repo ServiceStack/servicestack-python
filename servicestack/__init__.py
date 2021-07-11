@@ -60,6 +60,7 @@ __all__ = [
     'WebServiceExceptionType',
     'to_json',
     'from_json',
+    'to_dict',
     'convert',
     'qsvalue',
     'resolve_httpmethod',
@@ -107,7 +108,7 @@ from .dtos import \
     StringsResponse, AuditBase
 
 from .clients import TypeConverters, JsonServiceClient, WebServiceException, \
-    WebServiceExceptionType, to_json, from_json, convert, qsvalue, \
+    WebServiceExceptionType, to_json, from_json, to_dict, convert, qsvalue, \
     resolve_httpmethod
 
 from .utils import \

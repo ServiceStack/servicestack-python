@@ -3,15 +3,10 @@
 
 import unittest
 
-import requests
-from dataclasses_json import config, dataclass_json, Undefined
-
-from .dtos import *
-from datetime import datetime, timedelta, timezone
-from servicestack import JsonServiceClient, WebServiceException, to_json, convert
-from .config import create_test_client
+from servicestack import to_json, convert
 from servicestack.utils import *
 from tests.dtos import HelloWithEnum
+from .dtos import *
 
 
 class TestEnumSerialization(unittest.TestCase):
