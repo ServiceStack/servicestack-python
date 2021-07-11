@@ -5,6 +5,7 @@ from servicestack import JsonServiceClient, Authenticate
 TEST_URL = "http://test.servicestack.net"
 TECHSTACKS_URL = "https://techstacks.io"
 
+
 def create_test_client():
     return JsonServiceClient(TEST_URL)
 
@@ -15,4 +16,3 @@ def create_techstacks_client():
 
 def clear_session(client: JsonServiceClient):
     client.post(Authenticate(provider="logout"))
-

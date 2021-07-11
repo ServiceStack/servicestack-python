@@ -196,26 +196,6 @@ TypeConverters.deserializers = {
 }
 
 
-def is_optional(cls: Type): return f"{cls}".startswith("typing.Optional")
-
-
-def is_list(cls: Type):
-    return cls == typing.List or cls == list or get_origin(cls) == list
-
-
-def is_dict(cls: Type):
-    return cls == typing.Dict or cls == dict or get_origin(cls) == dict
-
-
-def generic_arg(cls: Type): return generic_args(cls)[0]
-
-
-def generic_args(cls: Type):
-    if not hasattr(cls, '__args__'):
-        raise TypeError(f"{cls} is not a Generic Type")
-    return cls.__args__
-
-
 def _resolve_forwardref(cls: Type, orig: Type = None):
     type_name = cls.__forward_arg__
     if orig is not None and orig.__name__ == type_name:

@@ -1,5 +1,5 @@
 """ Options:
-Date: 2021-07-10 23:12:40
+Date: 2021-07-11 08:30:48
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
 BaseUrl: https://techstacks.io
@@ -28,11 +28,11 @@ from enum import Enum
 
 
 class PostType(str, Enum):
-    ANNOUNCEMENT = 'ANNOUNCEMENT'
-    POST = 'POST'
-    SHOWCASE = 'SHOWCASE'
-    QUESTION = 'QUESTION'
-    REQUEST = 'REQUEST'
+    ANNOUNCEMENT = 'Announcement'
+    POST = 'Post'
+    SHOWCASE = 'Showcase'
+    QUESTION = 'Question'
+    REQUEST = 'Request'
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -54,112 +54,66 @@ class Post:
     content_html: Optional[str] = None
 
     pin_comment_id: Optional[int] = None
-
     technology_ids: Optional[List[int]] = None
-
     from_date: Optional[DateTime] = None
-
     to_date: Optional[DateTime] = None
-
     location: Optional[str] = None
-
     meta_type: Optional[str] = None
-
     meta: Optional[str] = None
-
     approved: bool = False
-
     up_votes: int = 0
-
     down_votes: int = 0
-
     points: int = 0
-
     views: int = 0
-
     favorites: int = 0
-
     subscribers: int = 0
-
     reply_count: int = 0
-
     comments_count: int = 0
-
     word_count: int = 0
-
     report_count: int = 0
-
     links_count: int = 0
-
     linked_to_count: int = 0
-
     score: int = 0
-
     rank: int = 0
-
     labels: Optional[List[str]] = None
-
     ref_user_ids: Optional[List[int]] = None
-
     ref_links: Optional[List[str]] = None
-
     mute_user_ids: Optional[List[int]] = None
-
     last_comment_date: Optional[DateTime] = None
-
     last_comment_id: Optional[int] = None
-
     last_comment_user_id: Optional[int] = None
-
     deleted: Optional[DateTime] = None
-
     deleted_by: Optional[str] = None
-
     locked: Optional[DateTime] = None
-
     locked_by: Optional[str] = None
-
     hidden: Optional[DateTime] = None
-
     hidden_by: Optional[str] = None
-
     status: Optional[str] = None
-
     status_date: Optional[DateTime] = None
-
     status_by: Optional[str] = None
-
     archived: bool = False
-
     bumped: Optional[DateTime] = None
-
     created: DateTime = datetime.datetime(1, 1, 1)
-
     created_by: Optional[str] = None
-
     modified: DateTime = datetime.datetime(1, 1, 1)
-
     modified_by: Optional[str] = None
-
     ref_id: Optional[int] = None
-
     ref_source: Optional[str] = None
-
     ref_urn: Optional[str] = None
 
 
 class ReportAction(str, Enum):
-    DISMISS = 'DISMISS'
-    DELETE = 'DELETE'
+    DISMISS = 'Dismiss'
+    DELETE = 'Delete'
 
 
 class FlagType(str, Enum):
-    VIOLATION = 'VIOLATION'
-    SPAM = 'SPAM'
-    ABUSIVE = 'ABUSIVE'
-    CONFIDENTIAL = 'CONFIDENTIAL'
-    OFF_TOPIC = 'OFF_TOPIC'
-    OTHER = 'OTHER'
+    VIOLATION = 'Violation'
+    SPAM = 'Spam'
+    ABUSIVE = 'Abusive'
+    CONFIDENTIAL = 'Confidential'
+    OFF_TOPIC = 'OffTopic'
+    OTHER = 'Other'
 
 
 class Frequency(Enum):
@@ -170,15 +124,15 @@ class Frequency(Enum):
 
 
 class TechnologyTier(str, Enum):
-    PROGRAMMING_LANGUAGE = 'PROGRAMMING_LANGUAGE'
-    CLIENT = 'CLIENT'
-    HTTP = 'HTTP'
-    SERVER = 'SERVER'
-    DATA = 'DATA'
-    SOFTWARE_INFRASTRUCTURE = 'SOFTWARE_INFRASTRUCTURE'
-    OPERATING_SYSTEM = 'OPERATING_SYSTEM'
-    HARDWARE_INFRASTRUCTURE = 'HARDWARE_INFRASTRUCTURE'
-    THIRD_PARTY_SERVICES = 'THIRD_PARTY_SERVICES'
+    PROGRAMMING_LANGUAGE = 'ProgrammingLanguage'
+    CLIENT = 'Client'
+    HTTP = 'Http'
+    SERVER = 'Server'
+    DATA = 'Data'
+    SOFTWARE_INFRASTRUCTURE = 'SoftwareInfrastructure'
+    OPERATING_SYSTEM = 'OperatingSystem'
+    HARDWARE_INFRASTRUCTURE = 'HardwareInfrastructure'
+    THIRD_PARTY_SERVICES = 'ThirdPartyServices'
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -266,13 +220,9 @@ class TechnologyStackBase:
     details_html: Optional[str] = None
 
     last_status_update: Optional[DateTime] = None
-
     organization_id: Optional[int] = None
-
     comments_post_id: Optional[int] = None
-
     view_count: int = 0
-
     fav_count: int = 0
 
 
@@ -341,33 +291,19 @@ class PostComment:
     content_html: Optional[str] = None
 
     score: int = 0
-
     rank: int = 0
-
     up_votes: int = 0
-
     down_votes: int = 0
-
     favorites: int = 0
-
     word_count: int = 0
-
     report_count: int = 0
-
     deleted: Optional[DateTime] = None
-
     hidden: Optional[DateTime] = None
-
     modified: DateTime = datetime.datetime(1, 1, 1)
-
     created: DateTime = datetime.datetime(1, 1, 1)
-
     created_by: Optional[str] = None
-
     ref_id: Optional[int] = None
-
     ref_source: Optional[str] = None
-
     ref_urn: Optional[str] = None
 
 

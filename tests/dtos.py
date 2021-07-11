@@ -1,8 +1,8 @@
 """ Options:
-Date: 2021-07-11 06:31:33
+Date: 2021-07-11 10:30:38
 Version: 5.111
 Tip: To override a DTO option, remove "//" prefix before updating
-BaseUrl: https://localhost:5001
+BaseUrl: https://test.servicestack.net
 
 #GlobalNamespace:
 #MakePropertiesOptional: False
@@ -166,9 +166,9 @@ class NestedClass:
 
 
 class EnumType(str, Enum):
-    VALUE1 = 'VALUE1'
-    VALUE2 = 'VALUE2'
-    VALUE3 = 'VALUE3'
+    VALUE1 = 'Value1'
+    VALUE2 = 'Value2'
+    VALUE3 = 'Value3'
 
 
 # @Flags()
@@ -200,12 +200,12 @@ class EnumAsInt(Enum):
 
 
 class EnumStyle(str, Enum):
-    LOWER = 'LOWER'
+    LOWER = 'lower'
     UPPER = 'UPPER'
-    PASCAL_CASE = 'PASCAL_CASE'
-    CAMEL_CASE = 'CAMEL_CASE'
-    CAMEL_U_P_P_E_R = 'CAMEL_U_P_P_E_R'
-    PASCAL_U_P_P_E_R = 'PASCAL_U_P_P_E_R'
+    PASCAL_CASE = 'PascalCase'
+    CAMEL_CASE = 'camelCase'
+    CAMEL_U_P_P_E_R = 'camelUPPER'
+    PASCAL_U_P_P_E_R = 'PascalUPPER'
 
 
 class EnumStyleMembers(str, Enum):
@@ -286,13 +286,13 @@ class EmptyClass:
 
 
 class DayOfWeek(str, Enum):
-    SUNDAY = 'SUNDAY'
-    MONDAY = 'MONDAY'
-    TUESDAY = 'TUESDAY'
-    WEDNESDAY = 'WEDNESDAY'
-    THURSDAY = 'THURSDAY'
-    FRIDAY = 'FRIDAY'
-    SATURDAY = 'SATURDAY'
+    SUNDAY = 'Sunday'
+    MONDAY = 'Monday'
+    TUESDAY = 'Tuesday'
+    WEDNESDAY = 'Wednesday'
+    THURSDAY = 'Thursday'
+    FRIDAY = 'Friday'
+    SATURDAY = 'Saturday'
 
 
 class ScopeType(Enum):
@@ -349,8 +349,8 @@ class QueryDbTenant(Generic[From, Into], QueryDb2[From, Into]):
 
 
 class LivingStatus(str, Enum):
-    ALIVE = 'ALIVE'
-    DEAD = 'DEAD'
+    ALIVE = 'Alive'
+    DEAD = 'Dead'
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -589,9 +589,9 @@ class InnerType:
 
 
 class InnerEnum(str, Enum):
-    FOO = 'FOO'
-    BAR = 'BAR'
-    BAZ = 'BAZ'
+    FOO = 'Foo'
+    BAR = 'Bar'
+    BAZ = 'Baz'
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -1198,7 +1198,6 @@ class DeclarativeCollectiveValidationTest(IReturn[EmptyResponse]):
     site: Optional[str] = None
 
     declarative_validations: Optional[List[DeclarativeChildValidation]] = None
-
     fluent_validations: Optional[List[FluentChildValidation]] = None
 
 
@@ -1210,7 +1209,6 @@ class DeclarativeSingleValidationTest(IReturn[EmptyResponse]):
     site: Optional[str] = None
 
     declarative_single_validation: Optional[DeclarativeSingleValidation] = None
-
     fluent_single_validation: Optional[FluentSingleValidation] = None
 
 
