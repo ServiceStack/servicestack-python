@@ -2,6 +2,7 @@ import base64
 import decimal
 import inspect
 import json
+import re
 from dataclasses_json import dataclass_json
 from dataclasses import dataclass, field, fields, asdict, is_dataclass
 from datetime import datetime, timedelta
@@ -14,7 +15,6 @@ import marshmallow.fields as mf
 import requests
 from requests.exceptions import HTTPError
 from requests.models import Response
-from stringcase import camelcase, snakecase, uppercase
 
 from servicestack.dtos import IReturn, IReturnVoid, IGet, IPost, IPut, IPatch, \
     IDelete, ResponseStatus, EmptyResponse, GetAccessToken, GetAccessTokenResponse
@@ -28,6 +28,26 @@ AUTHORIZATION_HEADER = "Authorization"
 CONTENT_TYPE = "Content-Type"
 SS_TOKEN_COOKIE = "ss-tok"
 SS_REFRESH_TOKEN_COOKIE = "ss-reftok"
+
+
+def lowercase(string): return str(string).lower()
+
+
+def uppercase(string): return str(string).upper()
+
+
+def snakecase(string):
+    string = re.sub(r"[\-\.\s]", '_', str(string))
+    if not string:
+        return string
+    return lowercase(string[0]) + re.sub(r"[A-Z]", lambda matched: '_' + lowercase(matched.group(0)), string[1:])
+
+
+def camelcase(string):
+    string = re.sub(r"\w[\s\W]+\w", '', str(string))
+    if not string:
+        return string
+    return lowercase(string[0]) + re.sub(r"[\-_\.\s]([a-z])", lambda matched: uppercase(matched.group(1)), string[1:])
 
 
 def _dump(obj):
