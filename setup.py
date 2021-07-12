@@ -9,7 +9,7 @@ dependencies = ['requests>=2.25.1', 'dataclasses>=0.6', 'dataclasses-json>=0.5.4
 
 setuptools.setup(
     name="servicestack",
-    version="0.0.2",
+    version="0.0.3",
     author="ServiceStack, Inc.",
     author_email="team@servicestack.net",
     description="ServiceStack Python Service Clients",
@@ -26,9 +26,9 @@ setuptools.setup(
         'License :: OSI Approved :: BSD License',
         'Natural Language :: English',
         "Operating System :: OS Independent",
-        'Programming Language :: Python :: 3.8',
+        'Programming Language :: Python :: 3.9',
         'Topic :: Software Development :: Libraries :: Python Modules'
     ],
     py_modules=["servicestack"],
-    python_requires='>=3.8',
+    python_requires='>=3.9',
 )
