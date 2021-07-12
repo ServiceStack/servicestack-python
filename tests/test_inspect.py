@@ -5,9 +5,9 @@ import operator
 import unittest
 
 import requests
-from dataclasses_json import config, dataclass_json, Undefined
 
-from servicestack.utils import *
+from .config import *
+from .techstacks_dtos import *
 
 
 @dataclass_json(undefined=Undefined.EXCLUDE)
@@ -36,3 +36,11 @@ class TestTechStacks(unittest.TestCase):
         printdumptable(org_repos[0:10], headers=['name', 'lang', 'watchers', 'forks'])
 
         inspect_vars({'org_repos': org_repos})
+
+    def test_does_support_FindTechnologies(self):
+        client = create_techstacks_client()
+        response = client.get(FindTechStacks(
+            ids=[1, 2, 3]))
+        printdump(response)
+        printdumptable(response.results, headers=['id', 'name', 'vendorName', 'createdBy', 'viewCount', 'favCount'])
+        inspect_vars({"response": response})

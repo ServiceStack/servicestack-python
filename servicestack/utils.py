@@ -1,34 +1,41 @@
 import base64
 import json
-import numbers
-import os
-import pathlib
-import platform
-import dataclasses
-import typing
+import re
 from datetime import datetime, timezone, timedelta
-from typing import Optional, List, Dict, Any, Type, get_origin, Union, get_args
-from dataclasses import dataclass, field, asdict
-from functools import reduce
+from typing import Optional, Any
+
 from .log import Log
 
 
-def is_optional(cls: Type): return get_origin(cls) is Union and type(None) in get_args(cls)
+def lowercase(string): return str(string).lower()
 
 
-def is_list(cls: Type): return cls == typing.List or cls == list or get_origin(cls) == list
+def uppercase(string): return str(string).upper()
 
 
-def is_dict(cls: Type): return cls == typing.Dict or cls == dict or get_origin(cls) == dict
+def snakecase(string):
+    string = re.sub(r"[\-\.\s]", '_', str(string))
+    if not string:
+        return string
+    return lowercase(string[0]) + re.sub(r"[A-Z]", lambda matched: '_' + lowercase(matched.group(0)), string[1:])
 
 
-def generic_args(cls: Type):
-    if not hasattr(cls, '__args__'):
-        raise TypeError(f"{cls} is not a Generic Type")
-    return cls.__args__
+def camelcase(string):
+    string = re.sub(r"\w[\s\W]+\w", '', str(string))
+    if not string:
+        return string
+    return lowercase(string[0]) + re.sub(r"[\-_\.\s]([a-z])", lambda matched: uppercase(matched.group(1)), string[1:])
 
 
-def generic_arg(cls: Type): return generic_args(cls)[0]
+def ex_message(e: Exception):
+    if hasattr(e, 'message'):
+        return e.message
+    return str(e)
+
+
+def log(o: Any):
+    print(o)
+    return o
 
 
 def index_of(target: str, needle: str):
@@ -255,148 +262,3 @@ def inspect_jwt(jwt: str):
     body = _decode_base64url_payload(left_part(right_part(jwt, '.'), '.'))
     exp = int(body['exp'])
     return head, body, datetime.fromtimestamp(exp, timezone.utc)
-
-
-# inspect utils
-def _asdict(obj):
-    if isinstance(obj, dict):
-        return obj
-    elif dataclasses.is_dataclass(obj):
-        return asdict(obj)
-    elif hasattr(obj, '__dict__'):
-        return obj.__dict__
-    else:
-        return obj
-
-
-def _asdicts(obj):
-    t = type(obj)
-    if is_list(t):
-        to = []
-        for o in obj:
-            to.append(_asdicts(o))
-        return to
-    elif is_dict(t):
-        to = {}
-        for k in obj:
-            to[k] = _asdicts(obj[k])
-        return to
-    else:
-        return _asdict(obj)
-
-
-def _allkeys(obj):
-    keys = []
-    for o in obj:
-        for key in o:
-            if not key in keys:
-                keys.append(key)
-    return keys
-
-
-def inspect_vars(objs):
-    if not isinstance(objs, dict):
-        raise TypeError('objs must be a dictionary')
-
-    to = _asdicts(objs)
-
-    inspect_vars_path = os.environ.get('INSPECT_VARS')
-    if inspect_vars_path is None:
-        return
-    if platform.system() == 'Windows':
-        inspect_vars_path = inspect_vars_path.replace("/", "\\")
-    else:
-        inspect_vars_path = inspect_vars_path.replace("\\", "/")
-
-    pathlib.Path(os.path.dirname(inspect_vars_path)).mkdir(parents=True, exist_ok=True)
-
-    with open(inspect_vars_path, 'w') as outfile:
-        json.dump(to, outfile)
-
-
-def dump(obj):
-    print(_asdicts(obj))
-    return json.dumps(_asdicts(obj), indent=4).replace('"', '').replace(': null', ':')
-
-
-def printdump(obj):
-    print(dump(obj))
-
-
-def _align_left(s: str, length: int, pad: str = ' '):
-    if length < 0:
-        return ""
-    alen = length + 1 - len(s)
-    if alen <= 0:
-        return s
-    return pad + s + (pad * (length + 1 - len(s)))
-
-
-def _align_center(s: str, length: int, pad: str = ' '):
-    if length < 0:
-        return ""
-    nlen = len(s)
-    half = (length // 2 - nlen // 2)
-    odds = abs((nlen % 2) - (length % 2))
-    return (pad * (half + 1)) + s + (pad * (half + 1 + odds))
-
-
-def _align_right(s: str, length: int, pad: str = ' '):
-    if length < 0:
-        return ""
-    alen = length + 1 - len(s)
-    if alen <= 0:
-        return s
-    return (pad * (length + 1 - len(s))) + s + pad
-
-
-def _align_auto(obj: Any, length: int, pad: str = ' '):
-    s = f"{obj}"
-    if len(s) <= length:
-        if isinstance(obj, numbers.Number):
-            return _align_right(s, length, pad)
-        return _align_left(s, length, pad)
-    return s
-
-
-def dumptable(objs, headers=None):
-    if not is_list(type(objs)):
-        raise TypeError('objs must be a list')
-    map_rows = _asdicts(objs)
-    if headers is None:
-        headers = _allkeys(map_rows)
-    col_sizes: Dict[str, int] = {}
-
-    for k in headers:
-        max = len(k)
-        for row in map_rows:
-            if k in row:
-                col = row[k]
-                val_size = len(f"{col}")
-                if val_size > max:
-                    max = val_size
-            col_sizes[k] = max
-
-    # sum + ' padding ' + |
-    row_width = reduce(lambda x, y: x + y, col_sizes.values(), 0) + \
-                (len(col_sizes) * 2) + \
-                (len(col_sizes) + 1)
-    sb: List[str] = [f"+{'-' * (row_width - 2)}+"]
-    head = "|"
-    for k in headers:
-        head += _align_center(k, col_sizes[k]) + "|"
-    sb.append(head)
-    sb.append(f"|{'-' * (row_width - 2)}|")
-
-    for row in map_rows:
-        to = "|"
-        for k in headers:
-            to += '' + _align_auto(row[k], col_sizes[k]) + "|"
-        sb.append(to)
-
-    sb.append(f"+{'-' * (row_width - 2)}+")
-    return '\n'.join(sb)
-
-
-def printdumptable(obj, headers=None):
-    print(dumptable(obj, headers))

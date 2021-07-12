@@ -1,0 +1,458 @@
+import base64
+import dataclasses
+import decimal
+import inspect
+import json
+import numbers
+import os
+import pathlib
+import platform
+import typing
+from dataclasses import asdict
+from dataclasses import fields, is_dataclass
+from datetime import datetime, timedelta
+from enum import Enum, IntEnum
+from functools import reduce
+from typing import Callable, Type, get_origin, ForwardRef, Union, TypeVar, get_args
+from typing import List, Dict, Any
+
+import marshmallow.fields as mf
+
+from servicestack.log import Log
+from servicestack.utils import to_timespan, to_datetime, to_bytearray, from_bytearray, from_datetime, from_timespan
+from .utils import snakecase, uppercase, camelcase
+
+
+def is_optional(cls: Type): return get_origin(cls) is Union and type(None) in get_args(cls)
+
+
+def is_list(cls: Type): return cls == typing.List or cls == list or get_origin(cls) == list
+
+
+def is_dict(cls: Type): return cls == typing.Dict or cls == dict or get_origin(cls) == dict
+
+
+def nameof(instance):
+    return type(instance).__name__
+
+
+def generic_args(cls: Type):
+    if not hasattr(cls, '__args__'):
+        raise TypeError(f"{cls} is not a Generic Type")
+    return cls.__args__
+
+
+def generic_arg(cls: Type): return generic_args(cls)[0]
+
+
+def _get_type_vars_map(cls: Type, type_map=None):
+    if type_map is None:
+        type_map = {}
+    if hasattr(cls, '__orig_bases__'):
+        for base_cls in cls.__orig_bases__:
+            _get_type_vars_map(base_cls, type_map)
+    generic_def = get_origin(cls)
+    if generic_def is not None:
+        generic_type_args = get_args(cls)
+        i = 0
+        for t in generic_def.__parameters__:
+            type_map[t] = generic_type_args[i]
+            i += 1
+    return type_map
+
+
+def _dict_with_string_keys(d: dict):
+    to = {}
+    for k, v in d.items():
+        to[f"{k}"] = v
+    return to
+
+
+def has_type_vars(cls: Type):
+    if cls is None:
+        return None
+    return isinstance(cls, TypeVar) or any(isinstance(x, TypeVar) for x in cls.__args__)
+
+
+def _empty(x):
+    return x is None or x == {} or x == []
+
+
+def to_dict(obj: Any):
+    if obj is None:
+        return {}
+    t = type(obj)
+    if is_list(t):
+        to = []
+        for o in obj:
+            to.append(to_dict(o))
+        return to
+    elif is_dict(t):
+        to = {}
+        for k in obj:
+            to[k] = to_dict(obj[k])
+        return to
+    if is_dataclass(obj):
+        d = asdict(obj)
+        to = {}
+        for k, v in d.items():
+            use_key = camelcase(k)
+            if use_key[-1] == '_':
+                use_key = use_key[0:-1]
+            to[use_key] = v
+    elif hasattr(obj, '__dict__'):
+        return obj.__dict__
+    return clean_any(to)
+
+
+def _clean_list(d: list):
+    return [v for v in (clean_any(v) for v in d) if not _empty(v)]
+
+
+def _clean_dict(d: dict):
+    return {k: v for k, v in ((k, clean_any(v)) for k, v in d.items()) if not _empty(v)}
+
+
+def clean_any(d):
+    """recursively remove empty lists, empty dicts, or None elements from a dictionary"""
+    if not isinstance(d, (dict, list)):
+        return d
+    elif isinstance(d, list):
+        return _clean_list(d)
+    else:
+        return _clean_dict(d)
+
+
+def _json_encoder(obj: Any):
+    if is_dataclass(obj):
+        return to_dict(obj)
+    if hasattr(obj, '__dict__'):
+        return vars(obj)
+    if isinstance(obj, datetime):
+        return obj.isoformat()
+    if isinstance(obj, timedelta):
+        return to_timespan(obj)
+    if isinstance(obj, bytes):
+        return base64.b64encode(obj).decode('ascii')
+    if isinstance(obj, decimal.Decimal):
+        return float(obj)
+    raise TypeError(f"Unsupported Type in JSON encoding: {type(obj)}")
+
+
+def to_json(obj: Any, indent=None):
+    if is_dataclass(obj):
+        obj_dict = clean_any(obj.to_dict())
+        return json.dumps(obj_dict, indent=indent, default=_json_encoder)
+    return json.dumps(obj, indent=indent, default=_json_encoder)
+
+
+class TypeConverters:
+    serializers: dict[Type, Callable[[Any], Any]]
+    deserializers: dict[Type, Callable[[Any], Any]]
+
+    @staticmethod
+    def register(cls: Type, serializer: Callable[[Any], Any] = None, deserializer: Callable[[Any], Any] = None):
+        if serializer is not None:
+            TypeConverters.serializers[cls] = serializer
+        if deserializer is not None:
+            TypeConverters.deserializers[cls] = deserializer
+
+    @staticmethod
+    def serialize(obj: Any):
+        cls = type(obj)
+        if cls in TypeConverters.serializers:
+            serializer = TypeConverters.serializers[cls]
+            try:
+                return serializer(obj)
+            except Exception as e:
+                Log.error(f"serializer(obj) {cls}({obj})", e)
+                raise e
+
+    @staticmethod
+    def deserialize(cls: Type, obj: Any):
+        deserializer = TypeConverters.deserializers[cls]
+        try:
+            return deserializer(obj)
+        except Exception as e:
+            Log.error(f"deserializer(obj) {cls}({obj})", e)
+            raise e
+
+
+TypeConverters.serializers = {
+    datetime: to_datetime,
+    timedelta: to_timespan,
+    bytes: to_bytearray,
+    bytearray: to_bytearray,
+}
+TypeConverters.deserializers = {
+    mf.DateTime: from_datetime,
+    mf.TimeDelta: from_timespan,
+    datetime: from_datetime,
+    timedelta: from_timespan,
+    bytes: from_bytearray,
+    bytearray: from_bytearray,
+}
+
+
+def _resolve_forwardref(cls: Type, orig: Type = None):
+    type_name = cls.__forward_arg__
+    if orig is not None and orig.__name__ == type_name:
+        return orig
+    if type_name not in globals():
+        raise TypeError(f"Could not resolve ForwardRef('{type_name}')")
+    return globals()[type_name]
+
+
+def unwrap(cls: Type):
+    if type(cls) == ForwardRef:
+        cls = _resolve_forwardref(cls)
+    if is_optional(cls):
+        return generic_arg(cls)
+    return cls
+
+
+def dict_get(name: str, obj: dict, case: Callable[[str], str] = None):
+    if name in obj:
+        return obj[name]
+    if case:
+        name_case = case(name)
+        if name_case in obj:
+            return obj[name_case]
+    name_snake = snakecase(name)
+    if name_snake in obj:
+        return obj[name_snake]
+    name_camel = camelcase(name)
+    if name_camel in obj:
+        return obj[name_camel]
+    if name.endswith('_'):
+        return dict_get(name.rstrip('_'), obj, case)
+    return None
+
+
+def sanitize_name(s: str):
+    return s.replace('_', '').upper()
+
+
+def enum_get(cls: Union[Enum, Type], key: Union[str, int]):
+    if type(key) == int or issubclass(cls, IntEnum):
+        return cls(key)
+    try:
+        return cls[key]
+    except Exception as e:
+        try:
+            upper_snake = uppercase(snakecase(key))
+            return cls[upper_snake]
+        except Exception as e2:
+            sanitize_key = sanitize_name(key)
+            for value in cls.__members__.values():
+                if sanitize_key == sanitize_name(value):
+                    return value
+            for member in cls.__members__.keys():
+                if sanitize_key == sanitize_name(member):
+                    return cls[member]
+    raise TypeError(f"{key} is not a member of {nameof(Enum)}")
+
+
+def _resolve_type(cls: Type, substitute_types: Dict[Type, type]):
+    if substitute_types is None:
+        return cls
+    return substitute_types[cls] if cls in substitute_types else cls
+
+
+def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
+    if obj is None:
+        return None
+    into = unwrap(into)
+    into = _resolve_type(into, substitute_types)
+    if Log.debug_enabled():
+        Log.debug(f"convert({into}, {substitute_types}, {obj})")
+
+    is_type = type(into) == type
+    if not is_type:
+        Log.debug(f"type of {into} is not a class")
+
+    generic_def = get_origin(into)
+    if generic_def is not None and is_dataclass(generic_def):
+        reified_types = _get_type_vars_map(into)
+        return convert(generic_def, obj, reified_types)
+
+    if is_dataclass(into):
+        to = {}
+        for f in fields(into):
+            val = dict_get(f.name, obj)
+            # print(f"to[{f.name}] = convert({f.type}, {val}, {substitute_types})")
+            to[f.name] = convert(f.type, val, substitute_types)
+            # print(f"to[{f.name}] = {to[f.name]}")
+        return into(**to)
+    elif is_list(into):
+        el_type = _resolve_type(generic_arg(into), substitute_types)
+        to = []
+        for item in obj:
+            to.append(convert(el_type, item, substitute_types))
+        return to
+    elif is_dict(into):
+        key_type, val_type = generic_args(into)
+        key_type = _resolve_type(key_type, substitute_types)
+        val_type = _resolve_type(val_type, substitute_types)
+        to = {}
+        if not hasattr(obj, 'items'):
+            Log.warn(f"dict {obj} ({type(type)}) does not have items()")
+        for key, val in obj.items():
+            to_key = convert(key_type, key, substitute_types)
+            to_val = convert(val_type, val, substitute_types)
+            to[to_key] = to_val
+        return to
+    else:
+        if into in TypeConverters.deserializers:
+            converter = TypeConverters.deserializers[into]
+            try:
+                return converter(obj)
+            except Exception as e:
+                Log.error(f"converter(obj) {into}({obj})", e)
+                raise e
+        elif inspect.isclass(into) and issubclass(into, mf.Field):
+            try:
+                return into().deserialize(obj)
+            except Exception as e:
+                Log.error(f"into().deserialize(obj) {into}({obj})", e)
+                raise e
+        elif is_type and issubclass(into, Enum):
+            try:
+                return enum_get(into, obj)
+            except Exception as e:
+                print(into, type(into), obj, type(obj))
+                Log.error(f"Enum into[obj] {into}[{obj}]", e)
+                raise e
+        else:
+            try:
+                return into(obj)
+            except Exception as e:
+                # if into == typing.Dict or get_origin(into) == typing.Dict:
+                #     print("WAS A typing.Dict")
+                Log.error(f"into(obj) {into}({obj})", e)
+                raise e
+
+
+def from_json(into: Type, json_str: str):
+    if json_str is None or json_str == "":
+        return None
+    json_obj = json.loads(json_str)
+    return convert(into, json_obj)
+
+
+# inspect utils
+def _allkeys(obj):
+    keys = []
+    for o in obj:
+        for key in o:
+            if not key in keys:
+                keys.append(key)
+    return keys
+
+
+def inspect_vars(objs):
+    if not isinstance(objs, dict):
+        raise TypeError('objs must be a dictionary')
+
+    to = to_dict(objs)
+
+    inspect_vars_path = os.environ.get('INSPECT_VARS')
+    if inspect_vars_path is None:
+        return
+    if platform.system() == 'Windows':
+        inspect_vars_path = inspect_vars_path.replace("/", "\\")
+    else:
+        inspect_vars_path = inspect_vars_path.replace("\\", "/")
+
+    pathlib.Path(os.path.dirname(inspect_vars_path)).mkdir(parents=True, exist_ok=True)
+
+    with open(inspect_vars_path, 'w') as outfile:
+        json_str = to_json(to)
+        outfile.write(json_str)
+
+
+def dump(obj):
+    return to_json(obj, indent=4).replace('"', '').replace(': null', ':')
+
+
+def printdump(obj):
+    print(dump(obj))
+
+
+def _align_left(s: str, length: int, pad: str = ' '):
+    if length < 0:
+        return ""
+    alen = length + 1 - len(s)
+    if alen <= 0:
+        return s
+    return pad + s + (pad * (length + 1 - len(s)))
+
+
+def _align_center(s: str, length: int, pad: str = ' '):
+    if length < 0:
+        return ""
+    nlen = len(s)
+    half = (length // 2 - nlen // 2)
+    odds = abs((nlen % 2) - (length % 2))
+    return (pad * (half + 1)) + s + (pad * (half + 1 + odds))
+
+
+def _align_right(s: str, length: int, pad: str = ' '):
+    if length < 0:
+        return ""
+    alen = length + 1 - len(s)
+    if alen <= 0:
+        return s
+    return (pad * (length + 1 - len(s))) + s + pad
+
+
+def _align_auto(obj: Any, length: int, pad: str = ' '):
+    s = f"{obj}"
+    if len(s) <= length:
+        if isinstance(obj, numbers.Number):
+            return _align_right(s, length, pad)
+        return _align_left(s, length, pad)
+    return s
+
+
+def dumptable(objs, headers=None):
+    if not is_list(type(objs)):
+        raise TypeError('objs must be a list')
+    map_rows = to_dict(objs)
+    if headers is None:
+        headers = _allkeys(map_rows)
+    col_sizes: Dict[str, int] = {}
+
+    for k in headers:
+        max = len(k)
+        for row in map_rows:
+            if k in row:
+                col = row[k]
+                val_size = len(f"{col}")
+                if val_size > max:
+                    max = val_size
+            col_sizes[k] = max
+
+    # sum + ' padding ' + |
+    row_width = reduce(lambda x, y: x + y, col_sizes.values(), 0) + \
+                (len(col_sizes) * 2) + \
+                (len(col_sizes) + 1)
+    sb: List[str] = [f"+{'-' * (row_width - 2)}+"]
+    head = "|"
+    for k in headers:
+        head += _align_center(k, col_sizes[k]) + "|"
+    sb.append(head)
+    sb.append(f"|{'-' * (row_width - 2)}|")
+
+    for row in map_rows:
+        to = "|"
+        for k in headers:
+            to += '' + _align_auto(row[k] if k in row else "", col_sizes[k]) + "|"
+        sb.append(to)
+
+    sb.append(f"+{'-' * (row_width - 2)}+")
+    return '\n'.join(sb)
+
+
+def printdumptable(obj, headers=None):
+    print(dumptable(obj, headers))

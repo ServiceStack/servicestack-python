@@ -1,89 +1,28 @@
 import base64
-import decimal
-import inspect
 import json
-import re
-from dataclasses_json import dataclass_json
-from dataclasses import dataclass, field, fields, asdict, is_dataclass
-from datetime import datetime, timedelta
-from enum import Enum, IntEnum
-from typing import Callable, get_args, Type, get_origin, ForwardRef, Union
+from dataclasses import dataclass, field
+from enum import Enum
+from typing import Callable, Type, Union, get_origin, ForwardRef
 from typing import TypeVar, Optional, Dict, List, Any
 from urllib.parse import urljoin, quote_plus
 
-import marshmallow.fields as mf
 import requests
+from dataclasses_json import dataclass_json
 from requests.exceptions import HTTPError
 from requests.models import Response
 
 from servicestack.dtos import IReturn, IReturnVoid, IGet, IPost, IPut, IPatch, \
     IDelete, ResponseStatus, EmptyResponse, GetAccessToken, GetAccessTokenResponse
 from servicestack.log import Log
-from servicestack.utils import is_list, is_dict, to_timespan, to_datetime, \
-    to_bytearray, from_bytearray, from_datetime, from_timespan, is_optional, \
-    generic_args, generic_arg
+from servicestack.reflection import TypeConverters, to_dict, nameof, is_list, is_dict, _resolve_forwardref, \
+    has_type_vars, _dict_with_string_keys, _get_type_vars_map, from_json, to_json
+from servicestack.utils import ex_message
 
 JSON_MIME_TYPE = "application/json"
 AUTHORIZATION_HEADER = "Authorization"
 CONTENT_TYPE = "Content-Type"
 SS_TOKEN_COOKIE = "ss-tok"
 SS_REFRESH_TOKEN_COOKIE = "ss-reftok"
-
-
-def lowercase(string): return str(string).lower()
-
-
-def uppercase(string): return str(string).upper()
-
-
-def snakecase(string):
-    string = re.sub(r"[\-\.\s]", '_', str(string))
-    if not string:
-        return string
-    return lowercase(string[0]) + re.sub(r"[A-Z]", lambda matched: '_' + lowercase(matched.group(0)), string[1:])
-
-
-def camelcase(string):
-    string = re.sub(r"\w[\s\W]+\w", '', str(string))
-    if not string:
-        return string
-    return lowercase(string[0]) + re.sub(r"[\-_\.\s]([a-z])", lambda matched: uppercase(matched.group(1)), string[1:])
-
-
-def _dump(obj):
-    print("")
-    for attr in dir(obj):
-        print(f"obj.{attr} = {getattr(obj, attr)}")
-    print("")
-
-
-def _get_type_vars_map(cls: Type, type_map=None):
-    if type_map is None:
-        type_map = {}
-    if hasattr(cls, '__orig_bases__'):
-        for base_cls in cls.__orig_bases__:
-            _get_type_vars_map(base_cls, type_map)
-    generic_def = get_origin(cls)
-    if generic_def is not None:
-        generic_type_args = get_args(cls)
-        i = 0
-        for t in generic_def.__parameters__:
-            type_map[t] = generic_type_args[i]
-            i += 1
-    return type_map
-
-
-def _dict_with_string_keys(d: dict):
-    to = {}
-    for k, v in d.items():
-        to[f"{k}"] = v
-    return to
-
-
-def has_type_vars(cls: Type):
-    if cls is None:
-        return None
-    return isinstance(cls, TypeVar) or any(isinstance(x, TypeVar) for x in cls.__args__)
 
 
 def _resolve_response_type(request):
@@ -134,10 +73,6 @@ def resolve_httpmethod(request):
     return "POST"
 
 
-def nameof(instance):
-    return type(instance).__name__
-
-
 def qsvalue(arg):
     if arg is None:
         return ""
@@ -171,273 +106,6 @@ def append_querystring(url: str, args: dict[str, Any]):
 
 def has_request_body(method: str):
     return not (method == "GET" or method == "DELETE" or method == "HEAD" or method == "OPTIONS")
-
-
-def _empty(x):
-    return x is None or x == {} or x == []
-
-
-def to_dict(obj: Any):
-    if obj is None:
-        return {}
-    if is_dataclass(obj):
-        d = asdict(obj)
-        to = {}
-        for k, v in d.items():
-            use_key = camelcase(k)
-            if use_key[-1] == '_':
-                use_key = use_key[0:-1]
-            to[use_key] = v
-    else:
-        to = obj.__dict__
-    return clean_any(to)
-
-
-def _clean_list(d: list):
-    return [v for v in (clean_any(v) for v in d) if not _empty(v)]
-
-
-def _clean_dict(d: dict):
-    return {k: v for k, v in ((k, clean_any(v)) for k, v in d.items()) if not _empty(v)}
-
-
-def clean_any(d):
-    """recursively remove empty lists, empty dicts, or None elements from a dictionary"""
-    if not isinstance(d, (dict, list)):
-        return d
-    elif isinstance(d, list):
-        return _clean_list(d)
-    else:
-        return _clean_dict(d)
-
-
-def _json_encoder(obj: Any):
-    if is_dataclass(obj):
-        return to_dict(obj)
-    if hasattr(obj, '__dict__'):
-        return vars(obj)
-    if isinstance(obj, datetime):
-        return obj.isoformat()
-    if isinstance(obj, timedelta):
-        return to_timespan(obj)
-    if isinstance(obj, bytes):
-        return base64.b64encode(obj).decode('ascii')
-    if isinstance(obj, decimal.Decimal):
-        return float(obj)
-    raise TypeError(f"Unsupported Type in JSON encoding: {type(obj)}")
-
-
-def to_json(obj: Any):
-    if is_dataclass(obj):
-        obj_dict = clean_any(obj.to_dict())
-        print(obj_dict)
-        return json.dumps(obj_dict, default=_json_encoder)
-    return json.dumps(obj, default=_json_encoder)
-
-
-class TypeConverters:
-    serializers: dict[Type, Callable[[Any], Any]]
-    deserializers: dict[Type, Callable[[Any], Any]]
-
-    @staticmethod
-    def register(cls: Type, serializer: Callable[[Any], Any] = None, deserializer: Callable[[Any], Any] = None):
-        if serializer is not None:
-            TypeConverters.serializers[cls] = serializer
-        if deserializer is not None:
-            TypeConverters.deserializers[cls] = deserializer
-
-    @staticmethod
-    def serialize(obj: Any):
-        cls = type(obj)
-        if cls in TypeConverters.serializers:
-            serializer = TypeConverters.serializers[cls]
-            try:
-                return serializer(obj)
-            except Exception as e:
-                Log.error(f"serializer(obj) {cls}({obj})", e)
-                raise e
-
-    @staticmethod
-    def deserialize(cls: Type, obj: Any):
-        deserializer = TypeConverters.deserializers[cls]
-        try:
-            return deserializer(obj)
-        except Exception as e:
-            Log.error(f"deserializer(obj) {cls}({obj})", e)
-            raise e
-
-
-TypeConverters.serializers = {
-    datetime: to_datetime,
-    timedelta: to_timespan,
-    bytes: to_bytearray,
-    bytearray: to_bytearray,
-}
-TypeConverters.deserializers = {
-    mf.DateTime: from_datetime,
-    mf.TimeDelta: from_timespan,
-    datetime: from_datetime,
-    timedelta: from_timespan,
-    bytes: from_bytearray,
-    bytearray: from_bytearray,
-}
-
-
-def _resolve_forwardref(cls: Type, orig: Type = None):
-    type_name = cls.__forward_arg__
-    if orig is not None and orig.__name__ == type_name:
-        return orig
-    if type_name not in globals():
-        raise TypeError(f"Could not resolve ForwardRef('{type_name}')")
-    return globals()[type_name]
-
-
-def unwrap(cls: Type):
-    if type(cls) == ForwardRef:
-        cls = _resolve_forwardref(cls)
-    if is_optional(cls):
-        return generic_arg(cls)
-    return cls
-
-
-def dict_get(name: str, obj: dict, case: Callable[[str], str] = None):
-    if name in obj:
-        return obj[name]
-    if case:
-        name_case = case(name)
-        if name_case in obj:
-            return obj[name_case]
-    name_snake = snakecase(name)
-    if name_snake in obj:
-        return obj[name_snake]
-    name_camel = camelcase(name)
-    if name_camel in obj:
-        return obj[name_camel]
-    if name.endswith('_'):
-        return dict_get(name.rstrip('_'), obj, case)
-    return None
-
-
-def sanitize_name(s: str):
-    return s.replace('_', '').upper()
-
-
-def enum_get(cls: Union[Enum, Type], key: Union[str, int]):
-    if type(key) == int or issubclass(cls, IntEnum):
-        return cls(key)
-    try:
-        return cls[key]
-    except Exception as e:
-        try:
-            upper_snake = uppercase(snakecase(key))
-            return cls[upper_snake]
-        except Exception as e2:
-            sanitize_key = sanitize_name(key)
-            for value in cls.__members__.values():
-                if sanitize_key == sanitize_name(value):
-                    return value
-            for member in cls.__members__.keys():
-                if sanitize_key == sanitize_name(member):
-                    return cls[member]
-    raise TypeError(f"{key} is not a member of {nameof(Enum)}")
-
-
-def _resolve_type(cls: Type, substitute_types: Dict[Type, type]):
-    if substitute_types is None:
-        return cls
-    return substitute_types[cls] if cls in substitute_types else cls
-
-
-def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
-    if obj is None:
-        return None
-    into = unwrap(into)
-    into = _resolve_type(into, substitute_types)
-    if Log.debug_enabled():
-        Log.debug(f"convert({into}, {substitute_types}, {obj})")
-
-    is_type = type(into) == type
-    if not is_type:
-        Log.debug(f"type of {into} is not a class")
-
-    generic_def = get_origin(into)
-    if generic_def is not None and is_dataclass(generic_def):
-        reified_types = _get_type_vars_map(into)
-        return convert(generic_def, obj, reified_types)
-
-    if is_dataclass(into):
-        to = {}
-        for f in fields(into):
-            val = dict_get(f.name, obj)
-            # print(f"to[{f.name}] = convert({f.type}, {val}, {substitute_types})")
-            to[f.name] = convert(f.type, val, substitute_types)
-            # print(f"to[{f.name}] = {to[f.name]}")
-        return into(**to)
-    elif is_list(into):
-        el_type = _resolve_type(generic_arg(into), substitute_types)
-        to = []
-        for item in obj:
-            to.append(convert(el_type, item, substitute_types))
-        return to
-    elif is_dict(into):
-        key_type, val_type = generic_args(into)
-        key_type = _resolve_type(key_type, substitute_types)
-        val_type = _resolve_type(val_type, substitute_types)
-        to = {}
-        if not hasattr(obj, 'items'):
-            Log.warn(f"dict {obj} ({type(type)}) does not have items()")
-        for key, val in obj.items():
-            to_key = convert(key_type, key, substitute_types)
-            to_val = convert(val_type, val, substitute_types)
-            to[to_key] = to_val
-        return to
-    else:
-        if into in TypeConverters.deserializers:
-            converter = TypeConverters.deserializers[into]
-            try:
-                return converter(obj)
-            except Exception as e:
-                Log.error(f"converter(obj) {into}({obj})", e)
-                raise e
-        elif inspect.isclass(into) and issubclass(into, mf.Field):
-            try:
-                return into().deserialize(obj)
-            except Exception as e:
-                Log.error(f"into().deserialize(obj) {into}({obj})", e)
-                raise e
-        elif is_type and issubclass(into, Enum):
-            try:
-                return enum_get(into, obj)
-            except Exception as e:
-                print(into, type(into), obj, type(obj))
-                Log.error(f"Enum into[obj] {into}[{obj}]", e)
-                raise e
-        else:
-            try:
-                return into(obj)
-            except Exception as e:
-                # if into == typing.Dict or get_origin(into) == typing.Dict:
-                #     print("WAS A typing.Dict")
-                Log.error(f"into(obj) {into}({obj})", e)
-                raise e
-
-
-def from_json(into: Type, json_str: str):
-    if json_str is None or json_str == "":
-        return None
-    json_obj = json.loads(json_str)
-    return convert(into, json_obj)
-
-
-def ex_message(e: Exception):
-    if hasattr(e, 'message'):
-        return e.message
-    return str(e)
-
-
-def log(o: Any):
-    print(o)
-    return o
 
 
 @dataclass_json
