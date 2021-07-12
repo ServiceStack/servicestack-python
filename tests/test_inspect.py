@@ -39,8 +39,11 @@ class TestTechStacks(unittest.TestCase):
 
     def test_does_support_FindTechnologies(self):
         client = create_techstacks_client()
-        response = client.get(FindTechStacks(
-            ids=[1, 2, 3]))
+        response = client.send(FindTechnologies(
+            ids=[1, 2, 3],
+            vendor_name="Google",
+            take=5))
+
         printdump(response)
         printdumptable(response.results, headers=['id', 'name', 'vendorName', 'createdBy', 'viewCount', 'favCount'])
         inspect_vars({"response": response})
