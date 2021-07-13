@@ -310,7 +310,7 @@ class JsonServiceClient:
 
         return self.send_request(info)
 
-    def send(self, request, method="POST", body: Any = None, args: Dict[str, Any] = None):
+    def send(self, request, method: Any = None, body: Any = None, args: Dict[str, Any] = None):
         if not isinstance(request, IReturn) and not isinstance(request, IReturnVoid):
             raise TypeError(f"'{nameof(request)}' does not implement IReturn or IReturnVoid")
 

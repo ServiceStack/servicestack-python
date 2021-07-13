@@ -68,13 +68,16 @@ __all__ = [
     'is_optional',
     'is_list',
     'is_dict',
+    'is_builtin',
     'generic_args',
     'generic_arg',
     'inspect_vars',
     'dump',
     'printdump',
-     'table',
+    'table',
     'printtable',
+    'htmldump',
+    'printhtmldump',
     'lowercase',
     'uppercase',
     'snakecase',
@@ -120,8 +123,8 @@ from .clients import JsonServiceClient, WebServiceException, WebServiceException
     qsvalue, resolve_httpmethod
 
 from .reflection import TypeConverters, to_json, from_json, all_keys, to_dict, convert, is_optional, \
-    is_list, is_dict, generic_args, generic_arg, inspect_vars, dump, printdump, table, \
-    printtable
+    is_list, is_dict, is_builtin, generic_args, generic_arg, inspect_vars, dump, printdump, table, \
+    printtable, htmldump, printhtmldump
 
 from .utils import \
     lowercase, uppercase, snakecase, camelcase, capitalcase, pascalcase, titlecase, clean_camelcase, \

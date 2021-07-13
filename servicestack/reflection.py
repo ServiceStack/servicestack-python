@@ -1,4 +1,5 @@
 import base64
+import collections
 import decimal
 import inspect
 import json
@@ -91,9 +92,16 @@ _JSON_TYPES = {str, bool, int, float}
 _BUILT_IN_TYPES = {str, bool, int, float, decimal.Decimal, datetime, timedelta, bytes, bytearray, complex}
 
 
+def is_builtin(t: Type):
+    try:
+        return t in _BUILT_IN_TYPES or issubclass(t, Enum)
+    except Exception as e:  # throws if t is not hashable
+        return False
+
+
 def to_dict(obj: Any, key_case: Callable[[str], str] = identity, remove_empty: bool = True):
     t = type(obj)
-    if obj is None or t in _BUILT_IN_TYPES or issubclass(t, Enum):
+    if obj is None or is_builtin(t):
         return obj
     if is_list(t):
         to = []
@@ -157,7 +165,7 @@ def _json_encoder(obj: Any):
         return float(obj)
     if t in _JSON_TYPES:
         return obj
-    if t in _BUILT_IN_TYPES or (type(obj) == type and issubclass(obj, Enum)):
+    if is_builtin(t):
         return _str(obj)
     raise TypeError(f"Unsupported Type in JSON encoding: {t}")
 
@@ -363,7 +371,11 @@ def from_json(into: Type, json_str: str):
 # inspect utils
 def all_keys(obj):
     keys = []
+    if not isinstance(obj, collections.Iterable):
+        return keys
     for o in obj:
+        if is_builtin(type(o)):
+            continue
         for key in o:
             key = _str(key)
             if key is not None and key not in keys:
@@ -477,3 +489,54 @@ def table(objs, headers=None):
 
 def printtable(obj, headers=None):
     print(table(obj, headers))
+
+def htmllist(d: dict):
+    sb: List[str] = ["<table><tbody>"]
+    for k, v in d.items():
+        sb.append(f"<tr><th>{_str(k)}</th><td>{_str(v)}</td></tr>")
+    sb.append("</tbody></table>")
+    return ''.join(sb)
+
+def htmldump(objs, headers=None):
+    map_rows = to_dict(objs)
+    t = type(map_rows)
+    if is_builtin(t):
+        return _str(map_rows)
+    if is_dict(t):
+        return htmllist(map_rows)
+
+    if headers is None:
+        headers = all_keys(map_rows)
+
+    # print(headers, map_rows)
+
+    sb: List[str] = ["<table>"]
+    row = ["<thead><tr>"]
+    for k in headers:
+        row.append(f"<th>{k}</th>")
+    row.append("</tr></head>")
+    if len(row) > 2:
+        sb.append(''.join(row))
+    sb.append("<tbody>")
+
+    rows = []
+    for item in map_rows:
+        rows.append("<tr>")
+        if len(headers) > 0:
+            row = []
+            for k in headers:
+                val = item[k] if k in item else ""
+                row.append(f"<td>{val}</td>")
+            rows.append(''.join(row))
+        else:
+            rows.append(f"<td>{item}</td>")
+        rows.append("</tr>")
+
+    sb.append(''.join(rows))
+    sb.append("</tbody>")
+    sb.append("</table>")
+    return '\n'.join(sb)
+
+
+def printhtmldump(obj, headers=None):
+    print(htmldump(obj, headers))

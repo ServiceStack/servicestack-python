@@ -49,4 +49,5 @@ class TestTechStacks(unittest.TestCase):
         printtable(response.results)
         printtable(response.results, headers=['id', 'name', 'vendor_name', 'view_count', 'fav_count'])
         printtable(to_dict(response.results, key_case=titlecase))
+        printhtmldump(response.results)
         inspect_vars({"response": response})
