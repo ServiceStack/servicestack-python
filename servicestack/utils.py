@@ -27,6 +27,26 @@ def camelcase(string):
     return lowercase(string[0]) + re.sub(r"[\-_\.\s]([a-z])", lambda matched: uppercase(matched.group(1)), string[1:])
 
 
+def capitalcase(string: str):
+    string = str(string)
+    if not string:
+        return string
+    return uppercase(string[0]) + string[1:]
+
+
+def pascalcase(string: str): return capitalcase(camelcase(string))
+
+
+def titlecase(string): return ' '.join([capitalcase(word) for word in snakecase(string).split("_")])
+
+
+def clean_camelcase(key: str):
+    use_key = camelcase(key)
+    if use_key[-1] == '_':
+        use_key = use_key[0:-1]
+    return use_key
+
+
 def ex_message(e: Exception):
     if hasattr(e, 'message'):
         return e.message
