@@ -1,18 +1,18 @@
 import base64
-import dataclasses
 import decimal
 import inspect
 import json
+import math
 import numbers
 import os
 import pathlib
 import platform
 import typing
-from dataclasses import asdict
 from dataclasses import fields, is_dataclass
 from datetime import datetime, timedelta
-from enum import Enum, IntEnum
+from enum import Enum, IntEnum, EnumMeta
 from functools import reduce
+from types import MappingProxyType
 from typing import Callable, Type, get_origin, ForwardRef, Union, TypeVar, get_args
 from typing import List, Dict, Any
 
@@ -29,7 +29,7 @@ def is_optional(cls: Type): return get_origin(cls) is Union and type(None) in ge
 def is_list(cls: Type): return cls == typing.List or cls == list or get_origin(cls) == list
 
 
-def is_dict(cls: Type): return cls == typing.Dict or cls == dict or get_origin(cls) == dict
+def is_dict(cls: Type): return cls == typing.Dict or cls == dict or get_origin(cls) == dict or cls == MappingProxyType
 
 
 def nameof(instance):
@@ -78,31 +78,51 @@ def _empty(x):
     return x is None or x == {} or x == []
 
 
-def to_dict(obj: Any):
-    if obj is None:
-        return {}
+def _str(x: Any):
+    if type(x) == str:
+        return x
+    return f"{x}"
+
+
+def identity(x: Any): return x
+
+
+_JSON_TYPES = {str, bool, int, float}
+_BUILT_IN_TYPES = {str, bool, int, float, decimal.Decimal, datetime, timedelta, bytes, bytearray, complex}
+
+
+def to_dict(obj: Any, key_case: Callable[[str], str] = identity, remove_empty: bool = True):
     t = type(obj)
+    if obj is None or t in _BUILT_IN_TYPES or issubclass(t, Enum):
+        return obj
     if is_list(t):
         to = []
         for o in obj:
-            to.append(to_dict(o))
-        return to
+            use_val = to_dict(o, key_case=key_case, remove_empty=remove_empty)
+            if not remove_empty or use_val is not None:
+                to.append(use_val)
     elif is_dict(t):
         to = {}
-        for k in obj:
-            to[k] = to_dict(obj[k])
-        return to
-    if is_dataclass(obj):
-        d = asdict(obj)
+        for k, v in obj.items():
+            use_key = key_case(_str(k))
+            use_val = to_dict(v, key_case=key_case, remove_empty=remove_empty)
+            if not remove_empty or use_val is not None:
+                to[use_key] = use_val
+    elif hasattr(obj, 'to_dict'):  # dataclass
+        d = obj.to_dict()
         to = {}
         for k, v in d.items():
-            use_key = camelcase(k)
-            if use_key[-1] == '_':
-                use_key = use_key[0:-1]
-            to[use_key] = v
+            use_key = key_case(_str(k))
+            use_val = to_dict(v, key_case=key_case, remove_empty=remove_empty)
+            if not remove_empty or use_val is not None:
+                to[use_key] = use_val
     elif hasattr(obj, '__dict__'):
-        return obj.__dict__
-    return clean_any(to)
+        to = to_dict(vars(obj), key_case=key_case, remove_empty=remove_empty)
+    else:
+        to = obj
+    if remove_empty:
+        return clean_any(to)
+    return to
 
 
 def _clean_list(d: list):
@@ -115,19 +135,18 @@ def _clean_dict(d: dict):
 
 def clean_any(d):
     """recursively remove empty lists, empty dicts, or None elements from a dictionary"""
-    if not isinstance(d, (dict, list)):
-        return d
-    elif isinstance(d, list):
+    if is_dict(d):
+        return _clean_dict(d)
+    elif is_list(d):
         return _clean_list(d)
     else:
-        return _clean_dict(d)
+        return d
 
 
 def _json_encoder(obj: Any):
-    if is_dataclass(obj):
+    t = type(obj)
+    if is_dataclass(t) or is_dict(t):
         return to_dict(obj)
-    if hasattr(obj, '__dict__'):
-        return vars(obj)
     if isinstance(obj, datetime):
         return obj.isoformat()
     if isinstance(obj, timedelta):
@@ -136,14 +155,15 @@ def _json_encoder(obj: Any):
         return base64.b64encode(obj).decode('ascii')
     if isinstance(obj, decimal.Decimal):
         return float(obj)
-    raise TypeError(f"Unsupported Type in JSON encoding: {type(obj)}")
+    if t in _JSON_TYPES:
+        return obj
+    if t in _BUILT_IN_TYPES or (type(obj) == type and issubclass(obj, Enum)):
+        return _str(obj)
+    raise TypeError(f"Unsupported Type in JSON encoding: {t}")
 
 
 def to_json(obj: Any, indent=None):
-    if is_dataclass(obj):
-        obj_dict = clean_any(obj.to_dict())
-        return json.dumps(obj_dict, indent=indent, default=_json_encoder)
-    return json.dumps(obj, indent=indent, default=_json_encoder)
+    return json.dumps(to_dict(obj), indent=indent, default=_json_encoder)
 
 
 class TypeConverters:
@@ -316,7 +336,7 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
             except Exception as e:
                 Log.error(f"into().deserialize(obj) {into}({obj})", e)
                 raise e
-        elif is_type and issubclass(into, Enum):
+        elif is_type and (issubclass(into, Enum) or into == EnumMeta):
             try:
                 return enum_get(into, obj)
             except Exception as e:
@@ -345,7 +365,8 @@ def all_keys(obj):
     keys = []
     for o in obj:
         for key in o:
-            if not key in keys:
+            key = _str(key)
+            if key is not None and key not in keys:
                 keys.append(key)
     return keys
 
@@ -392,7 +413,7 @@ def _align_center(s: str, length: int, pad: str = ' '):
     if length < 0:
         return ""
     nlen = len(s)
-    half = (length // 2 - nlen // 2)
+    half = math.floor(length / 2 - nlen / 2)
     odds = abs((nlen % 2) - (length % 2))
     return (pad * (half + 1)) + s + (pad * (half + 1 + odds))
 
@@ -407,7 +428,7 @@ def _align_right(s: str, length: int, pad: str = ' '):
 
 
 def _align_auto(obj: Any, length: int, pad: str = ' '):
-    s = f"{obj}"
+    s = _str(obj)
     if len(s) <= length:
         if isinstance(obj, numbers.Number):
             return _align_right(s, length, pad)
@@ -415,12 +436,12 @@ def _align_auto(obj: Any, length: int, pad: str = ' '):
     return s
 
 
-def dumptable(objs, headers=None):
+def table(objs, headers=None):
     if not is_list(type(objs)):
         raise TypeError('objs must be a list')
     map_rows = to_dict(objs)
     if headers is None:
-        headers = _allkeys(map_rows)
+        headers = all_keys(map_rows)
     col_sizes: Dict[str, int] = {}
 
     for k in headers:
@@ -428,7 +449,7 @@ def dumptable(objs, headers=None):
         for row in map_rows:
             if k in row:
                 col = row[k]
-                val_size = len(f"{col}")
+                val_size = len(_str(col))
                 if val_size > max:
                     max = val_size
             col_sizes[k] = max
@@ -454,5 +475,5 @@ def dumptable(objs, headers=None):
     return '\n'.join(sb)
 
 
-def printdumptable(obj, headers=None):
-    print(dumptable(obj, headers))
+def printtable(obj, headers=None):
+    print(table(obj, headers))

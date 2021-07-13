@@ -32,5 +32,5 @@ class TestJsonServiceClient(unittest.TestCase):
     def test_should_generate_default_value(self):
         client = create_test_client()
         request = HelloTypes(bool_=False, int_=0)
-        request_url = append_querystring(TEST_URL, to_dict(request))
+        request_url = append_querystring(TEST_URL, to_dict(request, key_case=clean_camelcase))
         self.assertEqual(request_url, TEST_URL + "?bool=false&int=0")

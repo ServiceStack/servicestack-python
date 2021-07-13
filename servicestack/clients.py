@@ -16,7 +16,8 @@ from servicestack.dtos import IReturn, IReturnVoid, IGet, IPost, IPut, IPatch, \
 from servicestack.log import Log
 from servicestack.reflection import TypeConverters, to_dict, nameof, is_list, is_dict, _resolve_forwardref, \
     has_type_vars, _dict_with_string_keys, _get_type_vars_map, from_json, to_json
-from servicestack.utils import ex_message
+from servicestack.utils import ex_message, clean_camelcase
+
 
 JSON_MIME_TYPE = "application/json"
 AUTHORIZATION_HEADER = "Authorization"
@@ -142,7 +143,6 @@ class SendContext:
             Log.debug(
                 f"{using}.request({self.method}): url={self.url}, headers={self.headers}, data={self.body_string}")
 
-        response: Optional[Response] = None
         if has_request_body(self.method):
             if self.session is not None:
                 response = self.session.request(self.method, self.url, data=self.body_string, headers=self.headers)
@@ -241,7 +241,7 @@ class JsonServiceClient:
     def create_url_from_dto(self, method: str, request: Any):
         url = urljoin(self.reply_base_url, nameof(request))
         if not has_request_body(method):
-            url = append_querystring(url, to_dict(request))
+            url = append_querystring(url, to_dict(request, key_case=clean_camelcase))
         return url
 
     def get(self, request: IReturn[T], args: Dict[str, Any] = None) -> T:
@@ -329,14 +329,15 @@ class JsonServiceClient:
             args=args,
             response_as=response_as))
 
-    def assert_valid_batch_request(self, requests: list):
-        if not isinstance(requests, list):
-            raise TypeError(f"'{nameof(requests)}' is not a List")
+    @staticmethod
+    def assert_valid_batch_request(request_dtos: list):
+        if not isinstance(request_dtos, list):
+            raise TypeError(f"'{nameof(request_dtos)}' is not a List")
 
-        if len(requests) == 0:
+        if len(request_dtos) == 0:
             return []
 
-        request = requests[0]
+        request = request_dtos[0]
         if not isinstance(request, IReturn) and not isinstance(request, IReturnVoid):
             raise TypeError(f"'{nameof(request)}' does not implement IReturn or IReturnVoid")
 
@@ -345,8 +346,8 @@ class JsonServiceClient:
             raise TypeError(f"Could not resolve Response Type for '{nameof(request)}'")
         return request, item_response_as
 
-    def send_all(self, requests: List[IReturn[T]]):
-        request, item_response_as = self.assert_valid_batch_request(requests)
+    def send_all(self, request_dtos: List[IReturn[T]]):
+        request, item_response_as = self.assert_valid_batch_request(request_dtos)
         url = urljoin(self.reply_base_url, nameof(request) + "[]")
 
         return self.send_request(SendContext(
@@ -354,14 +355,14 @@ class JsonServiceClient:
             headers=self.headers.copy(),
             method="POST",
             url=url,
-            request=list(requests),
+            request=list(request_dtos),
             body=None,
             body_string=None,
             args=None,
             response_as=list.__class_getitem__(item_response_as)))
 
-    def send_all_oneway(self, requests: list):
-        request, item_response_as = self.assert_valid_batch_request(requests)
+    def send_all_oneway(self, request_dtos: list):
+        request, item_response_as = self.assert_valid_batch_request(request_dtos)
         url = urljoin(self.oneway_base_url, nameof(request) + "[]")
 
         self.send_request(SendContext(
@@ -369,7 +370,7 @@ class JsonServiceClient:
             headers=self.headers.copy(),
             method="POST",
             url=url,
-            request=list(requests),
+            request=list(request_dtos),
             body=None,
             body_string=None,
             args=None,
@@ -474,7 +475,7 @@ class JsonServiceClient:
                 body_not_request_dto = info.request and info.body
                 if body_not_request_dto:
                     url = urljoin(self.reply_base_url, nameof(info.request))
-                    url = append_querystring(url, to_dict(info.request))
+                    url = append_querystring(url, to_dict(info.request, key_case=clean_camelcase))
                 else:
                     url = self.create_url_from_dto(info.method, body)
 

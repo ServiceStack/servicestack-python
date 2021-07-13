@@ -33,7 +33,7 @@ class TestTechStacks(unittest.TestCase):
         printdump(org_repos[0:3])
 
         print(f'\nTop 10 {org_name} Repos:')
-        printdumptable(org_repos[0:10], headers=['name', 'lang', 'watchers', 'forks'])
+        printtable(org_repos[0:10], headers=['name', 'lang', 'watchers', 'forks'])
 
         inspect_vars({'org_repos': org_repos})
 
@@ -42,8 +42,11 @@ class TestTechStacks(unittest.TestCase):
         response = client.send(FindTechnologies(
             ids=[1, 2, 3],
             vendor_name="Google",
-            take=5))
+            take=5,
+            fields='id,name,vendorName,createdBy,viewCount,favCount'))
 
-        printdump(response)
-        printdumptable(response.results, headers=['id', 'name', 'vendorName', 'createdBy', 'viewCount', 'favCount'])
+        # printdump(response)
+        printtable(response.results)
+        printtable(response.results, headers=['id', 'name', 'vendor_name', 'view_count', 'fav_count'])
+        printtable(to_dict(response.results, key_case=titlecase))
         inspect_vars({"response": response})
