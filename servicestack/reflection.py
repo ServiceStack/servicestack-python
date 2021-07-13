@@ -341,7 +341,7 @@ def from_json(into: Type, json_str: str):
 
 
 # inspect utils
-def _allkeys(obj):
+def all_keys(obj):
     keys = []
     for o in obj:
         for key in o:

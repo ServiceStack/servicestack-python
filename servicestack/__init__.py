@@ -62,6 +62,7 @@ __all__ = [
     'TypeConverters',
     'to_json',
     'from_json',
+    'all_keys',
     'to_dict',
     'convert',
     'is_optional',
@@ -110,7 +111,7 @@ from .dtos import \
 from .clients import JsonServiceClient, WebServiceException, WebServiceExceptionType, \
     qsvalue, resolve_httpmethod
 
-from .reflection import TypeConverters, to_json, from_json, to_dict, convert, is_optional, \
+from .reflection import TypeConverters, to_json, from_json, all_keys, to_dict, convert, is_optional, \
     is_list, is_dict, generic_args, generic_arg, inspect_vars, dump, printdump, dumptable, \
     printdumptable
 
