@@ -448,6 +448,19 @@ def _align_auto(obj: Any, length: int, pad: str = ' '):
     return s
 
 
+def sanitize_key(key: str): return key.replace("_", " ").replace(" ", "").lower()
+
+
+def lenient_getitem(obj: dict, key: str):
+    if key in obj:
+        return obj[key]
+    sanitized_key = sanitize_key(key)
+    for k in obj:
+        if sanitize_key(k) == sanitized_key:
+            return obj[k]
+    return ""
+
+
 def table(objs, headers=None):
     if not is_list(type(objs)):
         raise TypeError('objs must be a list')
@@ -459,8 +472,8 @@ def table(objs, headers=None):
     for k in headers:
         max = len(k)
         for row in map_rows:
-            if k in row:
-                col = row[k]
+            col = lenient_getitem(row, k)
+            if col != "":
                 val_size = len(_str(col))
                 if val_size > max:
                     max = val_size
@@ -480,7 +493,7 @@ def table(objs, headers=None):
     for row in map_rows:
         to = "|"
         for k in headers:
-            to += '' + _align_auto(row[k] if k in row else "", col_sizes[k]) + "|"
+            to += '' + _align_auto(lenient_getitem(row, k), col_sizes[k]) + "|"
         sb.append(to)
 
     sb.append(f"+{'-' * (row_width - 2)}+")
@@ -490,12 +503,14 @@ def table(objs, headers=None):
 def printtable(obj, headers=None):
     print(table(obj, headers))
 
+
 def htmllist(d: dict):
     sb: List[str] = ["<table><tbody>"]
     for k, v in d.items():
         sb.append(f"<tr><th>{_str(k)}</th><td>{htmldump(v)}</td></tr>")
     sb.append("</tbody></table>")
     return ''.join(sb)
+
 
 def htmldump(objs, headers=None):
     if is_builtin(type(objs)):
@@ -526,7 +541,7 @@ def htmldump(objs, headers=None):
         if len(headers) > 0:
             row = []
             for k in headers:
-                val = item[k] if k in item else ""
+                val = lenient_getitem(item, k)
                 row.append(f"<td>{htmldump(val)}</td>")
             rows.append(''.join(row))
         else:

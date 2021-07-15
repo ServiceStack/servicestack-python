@@ -45,9 +45,12 @@ class TestTechStacks(unittest.TestCase):
             take=5,
             fields='id,name,vendorName,createdBy,viewCount,favCount'))
 
-        # printdump(response)
-        # printtable(response.results)
-        # printtable(response.results, headers=['id', 'name', 'vendor_name', 'view_count', 'fav_count'])
-        # printtable(to_dict(response.results, key_case=titlecase))
+        printdump(response)
+        printtable(response.results)
+        printtable(response.results,
+                   headers=['id', 'name', 'vendor_name', 'view_count', 'fav_count'])
+        printtable(response.results,
+                   headers=['Id', 'Name', 'VendorName', 'ViewCount', 'FavCount'])
+        printtable(to_dict(response.results, key_case=titlecase))
         printhtmldump(response)
-        # inspect_vars({"response": response})
+        inspect_vars({"response": response})
