@@ -493,15 +493,16 @@ def printtable(obj, headers=None):
 def htmllist(d: dict):
     sb: List[str] = ["<table><tbody>"]
     for k, v in d.items():
-        sb.append(f"<tr><th>{_str(k)}</th><td>{_str(v)}</td></tr>")
+        sb.append(f"<tr><th>{_str(k)}</th><td>{htmldump(v)}</td></tr>")
     sb.append("</tbody></table>")
     return ''.join(sb)
 
 def htmldump(objs, headers=None):
+    if is_builtin(type(objs)):
+        return _str(objs)
+
     map_rows = to_dict(objs)
     t = type(map_rows)
-    if is_builtin(t):
-        return _str(map_rows)
     if is_dict(t):
         return htmllist(map_rows)
 
@@ -526,10 +527,10 @@ def htmldump(objs, headers=None):
             row = []
             for k in headers:
                 val = item[k] if k in item else ""
-                row.append(f"<td>{val}</td>")
+                row.append(f"<td>{htmldump(val)}</td>")
             rows.append(''.join(row))
         else:
-            rows.append(f"<td>{item}</td>")
+            rows.append(f"<td>{htmldump(item)}</td>")
         rows.append("</tr>")
 
     sb.append(''.join(rows))
