@@ -1,0 +1,29 @@
+package:
+  name: "servicestack"
+  version: "0.0.6"
+
+source:
+  git_rev: 0.0.6
+  git_url: https://github.com/ServiceStack/servicestack-python
+
+requirements:
+  host:
+    - python >=3.9
+    - setuptools
+    - pip
+  build:
+    - python >=3.9
+  run:
+    - python >=3.9
+    - requests >=2.25.1
+    - dataclasses >=0.6
+    - dataclasses-json >=0.5.4
+    - marshmallow >=3.12.2
+
+build:
+    script: {{ PYTHON }} -m pip install . -vv
+about:
+  home: https://github.com/ServiceStack/servicestack-python
+  license: BSD-3-Clause
+  license_familY: BSD-3-Clause
+  summary: "ServiceStack Python Service Clients"
