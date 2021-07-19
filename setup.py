@@ -9,7 +9,7 @@ dependencies = ['requests>=2.25.1', 'dataclasses>=0.6', 'dataclasses-json>=0.5.4
 
 setuptools.setup(
     name="servicestack",
-    version="0.0.7",
+    version="0.0.8",
     author="ServiceStack, Inc.",
     author_email="team@servicestack.net",
     description="ServiceStack Python Service Clients",
