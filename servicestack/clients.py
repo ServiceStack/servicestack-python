@@ -2,7 +2,8 @@ import base64
 import json
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Callable, Type, Union, get_origin, ForwardRef
+from typing_extensions import Type, get_origin
+from typing import Callable, Union, ForwardRef
 from typing import TypeVar, Optional, Dict, List, Any
 from urllib.parse import urljoin, quote_plus
 
@@ -91,7 +92,7 @@ def qsvalue(arg):
     return quote_plus(str(arg))
 
 
-def append_querystring(url: str, args: dict[str, Any]):
+def append_querystring(url: str, args: Dict[str, Any]):
     if args:
         for key in args:
             val = args[key]
@@ -113,13 +114,13 @@ def has_request_body(method: str):
 @dataclass
 class SendContext:
     session: Optional[requests.Session] = None
-    headers: dict[str, str] = field(default_factory=dict)
+    headers: Dict[str, str] = field(default_factory=dict)
     method: str = None
     url: Optional[str] = None
     request: Optional[Union[IReturn, IReturnVoid, List[IReturn], List[IReturnVoid]]] = None
     body: Optional[Any] = None
     body_string: Optional[str] = None
-    args: Optional[dict[str, str]] = None
+    args: Optional[Dict[str, str]] = None
     response_as: type = None
     request_filter: Callable[[Any], None] = None
     response_filter: Callable[[Response], None] = None
@@ -270,29 +271,29 @@ class JsonServiceClient:
             return path_or_url
         return urljoin(self.base_url, path_or_url)
 
-    def get_url(self, path: str, response_as: Type, args: dict[str, Any] = None):
+    def get_url(self, path: str, response_as: Type, args: Dict[str, Any] = None):
         return self.send_url(path, "GET", response_as, None, args)
 
-    def delete_url(self, path: str, response_as: Type, args: dict[str, Any] = None):
+    def delete_url(self, path: str, response_as: Type, args: Dict[str, Any] = None):
         return self.send_url(path, "DELETE", response_as, None, args)
 
-    def options_url(self, path: str, response_as: Type, args: dict[str, Any] = None):
+    def options_url(self, path: str, response_as: Type, args: Dict[str, Any] = None):
         return self.send_url(path, "OPTIONS", response_as, None, args)
 
-    def head_url(self, path: str, response_as: Type, args: dict[str, Any] = None):
+    def head_url(self, path: str, response_as: Type, args: Dict[str, Any] = None):
         return self.send_url(path, "HEAD", response_as, None, args)
 
-    def post_url(self, path: str, body: Any = None, response_as: Type = None, args: dict[str, Any] = None):
+    def post_url(self, path: str, body: Any = None, response_as: Type = None, args: Dict[str, Any] = None):
         return self.send_url(path, "POST", response_as, body, args)
 
-    def put_url(self, path: str, body: Any = None, response_as: Type = None, args: dict[str, Any] = None):
+    def put_url(self, path: str, body: Any = None, response_as: Type = None, args: Dict[str, Any] = None):
         return self.send_url(path, "PUT", response_as, body, args)
 
-    def patch_url(self, path: str, body: Any = None, response_as: Type = None, args: dict[str, Any] = None):
+    def patch_url(self, path: str, body: Any = None, response_as: Type = None, args: Dict[str, Any] = None):
         return self.send_url(path, "PATCH", response_as, body, args)
 
     def send_url(self, path: str, method: str = None, response_as: Type = None, body: Any = None,
-                 args: dict[str, Any] = None):
+                 args: Dict[str, Any] = None):
 
         if body and not response_as:
             response_as = _resolve_response_type(body)
@@ -359,7 +360,7 @@ class JsonServiceClient:
             body=None,
             body_string=None,
             args=None,
-            response_as=list.__class_getitem__(item_response_as)))
+            response_as=list.__class_getitem__(item_response_as)))  # requires 3.9
 
     def send_all_oneway(self, request_dtos: list):
         request, item_response_as = self.assert_valid_batch_request(request_dtos)
@@ -374,7 +375,7 @@ class JsonServiceClient:
             body=None,
             body_string=None,
             args=None,
-            response_as=list.__class_getitem__(item_response_as)))
+            response_as=list.__class_getitem__(item_response_as)))  # requires 3.9
 
     def _resend_request(self, info: SendContext):
 

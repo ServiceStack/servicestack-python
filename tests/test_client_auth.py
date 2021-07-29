@@ -68,13 +68,12 @@ class TestAuthClient(unittest.TestCase):
     def test_can_use_on_authentication_required_to_fetch_token(self):
         client = create_test_client()
         state = State()
+        auth_client = create_test_client()
 
-        client.on_authentication_required = lambda c=client, s=state: [
+        client.on_authentication_required = lambda c=client, a=auth_client, s=state: [
             s.incr(),
-            auth_client := create_test_client(),
-            auth_client.set_credentials("test", "test"),
-            response := cast(AuthenticateResponse, auth_client.get(Authenticate())),
-            client.set_bearer_token(response.bearer_token)
+            a.set_credentials("test", "test"),
+            client.set_bearer_token(cast(AuthenticateResponse, a.get(Authenticate())).bearer_token)
         ]
 
         client.get(TestAuth())
@@ -86,8 +85,7 @@ class TestAuthClient(unittest.TestCase):
 
         client.on_authentication_required = lambda c=client, s=state: [
             s.incr(),
-            fresh_jwt := cast(CreateJwtResponse, c.post(create_jwt())),
-            c.set_bearer_token(fresh_jwt.token)
+            c.set_bearer_token(cast(CreateJwtResponse, c.post(create_jwt())).token)
         ]
 
         create_expired_jwt = create_jwt()

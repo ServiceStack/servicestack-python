@@ -1,5 +1,6 @@
 from abc import ABC, abstractmethod
 from enum import Enum
+from typing import List
 
 
 class LogLevel(str, Enum):
@@ -28,7 +29,7 @@ class NullLogger(Logger):
 
 
 class Log:
-    levels: list[LogLevel] = [LogLevel.WARN, LogLevel.ERROR]
+    levels: List[LogLevel] = [LogLevel.WARN, LogLevel.ERROR]
     logger: Logger = ConsoleLogger()
 
     @staticmethod

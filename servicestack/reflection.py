@@ -14,7 +14,8 @@ from datetime import datetime, timedelta
 from enum import Enum, IntEnum, EnumMeta
 from functools import reduce
 from types import MappingProxyType
-from typing import Callable, Type, get_origin, ForwardRef, Union, TypeVar, get_args
+from typing_extensions import Type, get_origin, get_args
+from typing import Callable, ForwardRef, Union, TypeVar
 from typing import List, Dict, Any
 
 import marshmallow.fields as mf
@@ -175,8 +176,8 @@ def to_json(obj: Any, indent=None):
 
 
 class TypeConverters:
-    serializers: dict[Type, Callable[[Any], Any]]
-    deserializers: dict[Type, Callable[[Any], Any]]
+    serializers = {}    # Py3.9: dict[Type, Callable[[Any], Any]]
+    deserializers = {}  # Py3.9: dict[Type, Callable[[Any], Any]]
 
     @staticmethod
     def register(cls: Type, serializer: Callable[[Any], Any] = None, deserializer: Callable[[Any], Any] = None):

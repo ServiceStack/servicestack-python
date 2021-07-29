@@ -337,6 +337,7 @@ class TestApi(unittest.TestCase):
         all_names = list(map(lambda x: x.name, response.results))
         self.assertLessEqual(all_names, ["item 1", "item 2"])
 
+    # requires Python 3.9
     def test_can_send_all_batch_request(self):
         client = create_test_client()
         client.response_filter = lambda res: self.assertEqual(res.headers["X-AutoBatch-Completed"], "3")
@@ -345,12 +346,14 @@ class TestApi(unittest.TestCase):
         self.assertListEqual(list(map(lambda x: x.result, responses)),
                              ['Hello, foo!', 'Hello, bar!', 'Hello, baz!'])
 
+    # requires Python 3.9
     def test_can_send_all_oneway_IReturn_batch_request(self):
         client = create_test_client()
         client.request_filter = lambda req: self.assertTrue(req.url.endswith("/json/oneway/Hello[]"))
         requests = list(map(lambda name: Hello(name=name), ["foo", "bar", "baz"]))
         client.send_all_oneway(requests)
 
+    # requires Python 3.9
     def test_can_send_all_oneway_IReturnVoid_batch_request(self):
         client = create_test_client()
         client.request_filter = lambda req: self.assertTrue(req.url.endswith("/json/oneway/HelloReturnVoid[]"))
