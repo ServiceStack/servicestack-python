@@ -1,5 +1,5 @@
 {% set name = "servicestack" %}
-{% set version = "0.0.7" %}
+{% set version = "0.0.8" %}
 
 package:
   name: "{{ name|lower }}"
@@ -7,7 +7,7 @@ package:
 
 source:
   url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
-  sha256: 52709e1ad7cc08a1b2e6b0df1155075e3d3f601f0c8d557edaa1defb3800c5b4
+  sha256: 4874987b82e81a8eeb146b53df6b282f48f843aa1e4f17eecc24d723dc3c5247
 
 build:
   noarch: python
@@ -26,24 +26,22 @@ requirements:
     - requests >=2.25.1
 
 test:
-  imports:
-    - servicestack
-    - tests
   requires:
-    - dataclasses >=0.6
-    - dataclasses-json >=0.5.4
     - pytest
-    - requests >=2.25.1
+  commands:
+    - "${PREFIX}/bin/python3 -m unittest tests.test_serialization.TestSerialization"  # [linux and osx]
+    - "%PREFIX%\\bin\\python3 -m unittest tests.test_serialization.TestSerialization"  # [win]
 
 about:
   home: "https://github.com/ServiceStack/servicestack-python"
   license: BSD-3-Clause
   license_family: BSD
-  license_file: LICENSE 
+  license_file: LICENSE
   summary: "ServiceStack Python Service Clients"
   doc_url: "https://github.com/ServiceStack/servicestack-python"
   dev_url: "https://github.com/ServiceStack/servicestack-python"
 
 extra:
   recipe-maintainers:
-    - ServiceStack
+    - mythz
+    - Layoric
