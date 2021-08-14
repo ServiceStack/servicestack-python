@@ -192,7 +192,6 @@ class JsonServiceClient:
     refresh_token_uri: Optional[str] = None
     username: Optional[str] = None
     password: Optional[str] = None
-    max_retries: int = 5
     use_token_cookie = False
     global_request_filter: Callable[[SendContext], None] = None  # static
     request_filter: Callable[[SendContext], None] = None
