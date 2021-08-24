@@ -5,6 +5,8 @@ ServiceStack's **Add ServiceStack Reference** feature allows clients to generate
 
 [![](https://docs.servicestack.net/images/servicestack-reference/python-add-servicestack-reference-youtube-splash.png)](https://youtu.be/WjbhfH45i5k)
 
+> YouTube: [youtu.be/WjbhfH45i5k](https://youtu.be/WjbhfH45i5k)
+
 ### First class development experience
 
 [Python](https://python.org) is one of the worlds most popular programming languages thanks to its ease of use and comprehensive libraries which sees it excels in many industries from education where it's often the first language taught in school to data science, machine learning and AI where it's often the dominant language used. To maximize the experience for calling ServiceStack APIs within these environments ServiceStack now supports Python as a 1st class Add ServiceStack Reference supported language which gives Python developers an end-to-end typed API for consuming ServiceStack APIs, complete with IDE integration in [PyCharm](https://www.jetbrains.com/pycharm/) as well as [built-in support in x dotnet tool](https://docs.servicestack.net/dotnet-tool#addupdate-servicestack-references) to generate Python DTOs for a remote ServiceStack instance from a single command-line.
