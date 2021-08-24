@@ -2,7 +2,8 @@
 
 ServiceStack's **Add ServiceStack Reference** feature allows clients to generate Native Types from directly within PyCharm using [ServiceStack IntelliJ Plugin](https://plugins.jetbrains.com/plugin/7749-servicestack/) - providing a simple way to give clients typed access to your ServiceStack Services.
 
-<iframe width="896" height="525" src="https://www.youtube.com/embed/WjbhfH45i5k" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
+
+[![](https://docs.servicestack.net/images/servicestack-reference/python-add-servicestack-reference-youtube-splash.png)](https://youtu.be/WjbhfH45i5k)
 
 ### First class development experience
 
