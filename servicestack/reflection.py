@@ -9,6 +9,7 @@ import os
 import pathlib
 import platform
 import typing
+import sys
 from dataclasses import fields, is_dataclass
 from datetime import datetime, timedelta
 from enum import Enum, IntEnum, EnumMeta
@@ -58,7 +59,10 @@ def _get_type_vars_map(cls: Type, type_map=None):
         generic_type_args = get_args(cls)
         i = 0
         for t in generic_def.__parameters__:
-            type_map[t] = generic_type_args[i]
+            k = t
+            if type(k) == TypeVar:
+                k = k.__name__
+            type_map[k] = generic_type_args[i]
             i += 1
     return type_map
 
@@ -232,9 +236,11 @@ def _resolve_forwardref(cls: Type, orig: Type = None):
     return globals()[type_name]
 
 
-def unwrap(cls: Type):
+def unwrap(cls: Type, module:str):
     if type(cls) == ForwardRef:
         cls = _resolve_forwardref(cls)
+    if isinstance(cls, str):
+        cls = eval(cls, {}, vars(sys.modules[module]))
     if is_optional(cls):
         return generic_arg(cls)
     return cls
@@ -282,16 +288,20 @@ def enum_get(cls: Union[Enum, Type], key: Union[str, int]):
     raise TypeError(f"{key} is not a member of {nameof(Enum)}")
 
 
-def _resolve_type(cls: Type, substitute_types: Dict[Type, type]):
+def _resolve_type(cls: Type, substitute_types: Dict[Type, type] ):
+    if type(cls) == TypeVar:
+        # TypeVar('T') == TypeVar('T') is false, 
+        # I think this should work
+        cls = cls.__name__
     if substitute_types is None:
         return cls
     return substitute_types[cls] if cls in substitute_types else cls
 
 
-def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
+def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None, module = None):
     if obj is None:
         return None
-    into = unwrap(into)
+    into = unwrap(into, module)
     into = _resolve_type(into, substitute_types)
     if Log.debug_enabled():
         Log.debug(f"convert({into}, {substitute_types}, {obj})")
@@ -310,14 +320,14 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
         for f in fields(into):
             val = dict_get(f.name, obj)
             # print(f"to[{f.name}] = convert({f.type}, {val}, {substitute_types})")
-            to[f.name] = convert(f.type, val, substitute_types)
+            to[f.name] = convert(f.type, val, substitute_types, into.__module__)
             # print(f"to[{f.name}] = {to[f.name]}")
         return into(**to)
     elif is_list(into):
         el_type = _resolve_type(generic_arg(into), substitute_types)
         to = []
         for item in obj:
-            to.append(convert(el_type, item, substitute_types))
+            to.append(convert(el_type, item, substitute_types, into.__module__))
         return to
     elif is_dict(into):
         key_type, val_type = generic_args(into)
@@ -327,8 +337,8 @@ def convert(into: Type, obj: Any, substitute_types: Dict[Type, type] = None):
         if not hasattr(obj, 'items'):
             Log.warn(f"dict {obj} ({type(type)}) does not have items()")
         for key, val in obj.items():
-            to_key = convert(key_type, key, substitute_types)
-            to_val = convert(val_type, val, substitute_types)
+            to_key = convert(key_type, key, substitute_types, into.__module__)
+            to_val = convert(val_type, val, substitute_types, into.__module__)
             to[to_key] = to_val
         return to
     else:
