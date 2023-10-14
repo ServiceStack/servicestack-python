@@ -3,7 +3,7 @@
 ServiceStack's **Add ServiceStack Reference** feature allows clients to generate Native Types from directly within PyCharm using [ServiceStack IntelliJ Plugin](https://plugins.jetbrains.com/plugin/7749-servicestack/) - providing a simple way to give clients typed access to your ServiceStack Services.
 
 
-[![](https://docs.servicestack.net/images/servicestack-reference/python-add-servicestack-reference-youtube-splash.png)](https://youtu.be/WjbhfH45i5k)
+[![](https://docs.servicestack.net/img/pages/servicestack-reference/python-add-servicestack-reference-youtube-splash.png)](https://youtu.be/WjbhfH45i5k)
 
 > YouTube: [youtu.be/WjbhfH45i5k](https://youtu.be/WjbhfH45i5k)
 
@@ -109,15 +109,15 @@ Or if preferred can be installed with [conda](https://conda.io):
 
 Python developers of [PyCharm](https://www.jetbrains.com/pycharm/) Professional and [FREE Community Edition](https://www.jetbrains.com/pycharm/features/#chooseYourEdition) can get a simplified development experience for consuming ServiceStack Services by installing the [ServiceStack Plugin](https://plugins.jetbrains.com/plugin/7749-servicestack) from the JetBrains Marketplace:
 
-[![](https://docs.servicestack.net/images/servicestack-reference/pycharm-servicestack-plugin.png)](https://plugins.jetbrains.com/plugin/7749-servicestack)
+[![](https://docs.servicestack.net/img/pages/servicestack-reference/pycharm-servicestack-plugin.png)](https://plugins.jetbrains.com/plugin/7749-servicestack)
 
 Where you'll be able to right-click on a directory and click on **ServiceStack Reference** on the context menu:
 
-![](https://docs.servicestack.net/images/servicestack-reference/pycharm-add-servicestack-reference.png)
+![](https://docs.servicestack.net/img/pages/servicestack-reference/pycharm-add-servicestack-reference.png)
 
 To launch the **Add Python ServiceStack Reference** dialog where you can enter the remote URL of the ServiceStack endpoint you wish to call to generate the Typed Python DTOs for all APIs which by default will saved to `dtos.py`:
 
-![](https://docs.servicestack.net/images/servicestack-reference/pycharm-add-servicestack-reference-dialog.png)
+![](https://docs.servicestack.net/img/pages/servicestack-reference/pycharm-add-servicestack-reference-dialog.png)
 
 Then just import the DTOs and `JsonServiceClient` to be able to consume any of the remote ServiceStack APIs:
 
@@ -135,7 +135,7 @@ response = client.send(FindTechnologies(
 
 If any of the the remote APIs change their DTOs can be updated by right-clicking on `dtos.py` and clicking **Update ServiceStack Reference**:
 
-![](https://docs.servicestack.net/images/servicestack-reference/pycharm-update-servicestack-reference.png)
+![](https://docs.servicestack.net/img/pages/servicestack-reference/pycharm-update-servicestack-reference.png)
 
 ### Simple command-line utility for Python
 
@@ -908,4 +908,4 @@ Top 10 python Repos:
 
 Alternatively you can use `htmldump` to generate API responses in a HTML UI which is especially useful in [Python Jupyter Notebooks](https://docs.servicestack.net/jupyter-notebooks-python) to easily visualize API responses, e.g:
 
-[![](https://docs.servicestack.net/images/apps/jupyterlab-mybinder-techstacks.png)](https://github.com/ServiceStack/jupyter-notebooks/blob/main/techstacks.io-FindTechnologies.ipynb)
+[![](https://docs.servicestack.net/img/pages/apps/jupyterlab-mybinder-techstacks.png)](https://github.com/ServiceStack/jupyter-notebooks/blob/main/techstacks.io-FindTechnologies.ipynb)
