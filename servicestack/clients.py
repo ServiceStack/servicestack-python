@@ -203,25 +203,33 @@ class JsonServiceClient:
 
     _session: requests.Session = None
 
-    def __init__(self, base_url):
+    def __init__(self, base_url:str):
         if not base_url:
             raise TypeError(f"base_url is required")
         self.base_url = base_url
-        self.reply_base_url = urljoin(base_url, 'json/reply') + "/"
-        self.oneway_base_url = urljoin(base_url, 'json/oneway') + "/"
-        self.headers = {'Accept': JSON_MIME_TYPE}
         self._session = requests.Session()
+        self.headers = {'Accept': JSON_MIME_TYPE}
+        self.set_base_path('api')
 
-    def set_credentials(self, username, password):
+    def set_base_path(self, base_path:str=''):
+        if not base_path:
+            self.reply_base_url = urljoin(self.base_url, 'json/reply') + "/"
+            self.oneway_base_url = urljoin(self.base_url, 'json/oneway') + "/"
+        else:
+            self.reply_base_url = urljoin(self.base_url, base_path) + "/"
+            self.oneway_base_url = urljoin(self.base_url, base_path) + "/"
+        return self
+
+    def set_credentials(self, username:str, password:str):
         self.username = username
         self.password = password
         return self
 
-    def set_bearer_token(self, bearer_token):
+    def set_bearer_token(self, bearer_token:str):
         self.bearer_token = bearer_token
         return self
 
-    def set_refresh_token(self, refresh_token):
+    def set_refresh_token(self, refresh_token:str):
         self.refresh_token = refresh_token
         return self
 
