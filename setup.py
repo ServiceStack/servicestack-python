@@ -10,7 +10,7 @@ dependencies = ['typing_extensions>=3.7.4', 'requests>=2.23.0', 'dataclasses>=0.
 
 setuptools.setup(
     name="servicestack",
-    version="0.1.3",
+    version="0.1.4",
     author="ServiceStack, Inc.",
     author_email="team@servicestack.net",
     description="ServiceStack Python Service Clients",
