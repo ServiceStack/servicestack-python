@@ -2,6 +2,7 @@ from typing import TypeVar, Generic, Optional, Dict, List, Any
 from dataclasses import dataclass
 from dataclasses_json import dataclass_json, LetterCase, Undefined
 from datetime import datetime, timedelta
+from enum import Enum, IntEnum
 
 T = TypeVar('T')
 Table = TypeVar('Table')
@@ -469,7 +470,7 @@ class WorkerStats:
     retries: int = 0
     failed: int = 0
     running_job: Optional[int] = None
-    running_time: Optional[datetime.timedelta] = None
+    running_time: Optional[timedelta] = None
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
@@ -482,8 +483,8 @@ class BackgroundJobBase:
     batch_id: Optional[str] = None
     callback: Optional[str] = None
     depends_on: Optional[int] = None
-    run_after: Optional[datetime.datetime] = None
-    created_date: datetime.datetime = datetime.datetime(1, 1, 1)
+    run_after: Optional[datetime] = None
+    created_date: datetime = datetime(1, 1, 1)
     created_by: Optional[str] = None
     request_id: Optional[str] = None
     request_type: Optional[str] = None
@@ -494,9 +495,9 @@ class BackgroundJobBase:
     response: Optional[str] = None
     response_body: Optional[str] = None
     state: Optional[BackgroundJobState] = None
-    started_date: Optional[datetime.datetime] = None
-    completed_date: Optional[datetime.datetime] = None
-    notified_date: Optional[datetime.datetime] = None
+    started_date: Optional[datetime] = None
+    completed_date: Optional[datetime] = None
+    notified_date: Optional[datetime] = None
     retry_limit: Optional[int] = None
     attempts: int = 0
     duration_ms: int = 0
@@ -504,7 +505,7 @@ class BackgroundJobBase:
     progress: Optional[float] = None
     status: Optional[str] = None
     logs: Optional[str] = None
-    last_activity_date: Optional[datetime.datetime] = None
+    last_activity_date: Optional[datetime] = None
     reply_to: Optional[str] = None
     error_code: Optional[str] = None
     error: Optional[ResponseStatus] = None
@@ -525,7 +526,7 @@ class JobSummary:
     worker: Optional[str] = None
     tag: Optional[str] = None
     batch_id: Optional[str] = None
-    created_date: datetime.datetime = datetime.datetime(1, 1, 1)
+    created_date: datetime = datetime(1, 1, 1)
     created_by: Optional[str] = None
     request_type: Optional[str] = None
     command: Optional[str] = None
@@ -533,8 +534,8 @@ class JobSummary:
     response: Optional[str] = None
     user_id: Optional[str] = None
     callback: Optional[str] = None
-    started_date: Optional[datetime.datetime] = None
-    completed_date: Optional[datetime.datetime] = None
+    started_date: Optional[datetime] = None
+    completed_date: Optional[datetime] = None
     state: Optional[BackgroundJobState] = None
     duration_ms: int = 0
     attempts: int = 0
@@ -547,7 +548,7 @@ class BackgroundJobOptions:
     ref_id: Optional[str] = None
     parent_id: Optional[int] = None
     worker: Optional[str] = None
-    run_after: Optional[datetime.datetime] = None
+    run_after: Optional[datetime] = None
     callback: Optional[str] = None
     depends_on: Optional[int] = None
     user_id: Optional[str] = None
@@ -557,7 +558,7 @@ class BackgroundJobOptions:
     batch_id: Optional[str] = None
     created_by: Optional[str] = None
     timeout_secs: Optional[int] = None
-    timeout: Optional[datetime.timedelta] = None
+    timeout: Optional[timedelta] = None
     args: Optional[Dict[str, str]] = None
     run_command: Optional[bool] = None
 
@@ -566,14 +567,14 @@ class BackgroundJobOptions:
 class ScheduledTask:
     id: int = 0
     name: Optional[str] = None
-    interval: Optional[datetime.timedelta] = None
+    interval: Optional[timedelta] = None
     cron_expression: Optional[str] = None
     request_type: Optional[str] = None
     command: Optional[str] = None
     request: Optional[str] = None
     request_body: Optional[str] = None
     options: Optional[BackgroundJobOptions] = None
-    last_run: Optional[datetime.datetime] = None
+    last_run: Optional[datetime] = None
     last_job_id: Optional[int] = None
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
