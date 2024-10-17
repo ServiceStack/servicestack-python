@@ -430,3 +430,158 @@ class AuditBase:
 
     deleted_date: Optional[datetime] = None
     deleted_by: Optional[str] = None
+
+
+class BackgroundJobState(str, Enum):
+    QUEUED = 'Queued'
+    STARTED = 'Started'
+    EXECUTED = 'Executed'
+    COMPLETED = 'Completed'
+    FAILED = 'Failed'
+    CANCELLED = 'Cancelled'
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class JobStatSummary:
+    name: Optional[str] = None
+    total: int = 0
+    completed: int = 0
+    retries: int = 0
+    failed: int = 0
+    cancelled: int = 0
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class HourSummary:
+    hour: Optional[str] = None
+    total: int = 0
+    completed: int = 0
+    failed: int = 0
+    cancelled: int = 0
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class WorkerStats:
+    name: Optional[str] = None
+    queued: int = 0
+    received: int = 0
+    completed: int = 0
+    retries: int = 0
+    failed: int = 0
+    running_job: Optional[int] = None
+    running_time: Optional[datetime.timedelta] = None
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class BackgroundJobBase:
+    id: int = 0
+    parent_id: Optional[int] = None
+    ref_id: Optional[str] = None
+    worker: Optional[str] = None
+    tag: Optional[str] = None
+    batch_id: Optional[str] = None
+    callback: Optional[str] = None
+    depends_on: Optional[int] = None
+    run_after: Optional[datetime.datetime] = None
+    created_date: datetime.datetime = datetime.datetime(1, 1, 1)
+    created_by: Optional[str] = None
+    request_id: Optional[str] = None
+    request_type: Optional[str] = None
+    command: Optional[str] = None
+    request: Optional[str] = None
+    request_body: Optional[str] = None
+    user_id: Optional[str] = None
+    response: Optional[str] = None
+    response_body: Optional[str] = None
+    state: Optional[BackgroundJobState] = None
+    started_date: Optional[datetime.datetime] = None
+    completed_date: Optional[datetime.datetime] = None
+    notified_date: Optional[datetime.datetime] = None
+    retry_limit: Optional[int] = None
+    attempts: int = 0
+    duration_ms: int = 0
+    timeout_secs: Optional[int] = None
+    progress: Optional[float] = None
+    status: Optional[str] = None
+    logs: Optional[str] = None
+    last_activity_date: Optional[datetime.datetime] = None
+    reply_to: Optional[str] = None
+    error_code: Optional[str] = None
+    error: Optional[ResponseStatus] = None
+    args: Optional[Dict[str, str]] = None
+    meta: Optional[Dict[str, str]] = None
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class BackgroundJob(BackgroundJobBase):
+    id: int = 0
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class JobSummary:
+    id: int = 0
+    parent_id: Optional[int] = None
+    ref_id: Optional[str] = None
+    worker: Optional[str] = None
+    tag: Optional[str] = None
+    batch_id: Optional[str] = None
+    created_date: datetime.datetime = datetime.datetime(1, 1, 1)
+    created_by: Optional[str] = None
+    request_type: Optional[str] = None
+    command: Optional[str] = None
+    request: Optional[str] = None
+    response: Optional[str] = None
+    user_id: Optional[str] = None
+    callback: Optional[str] = None
+    started_date: Optional[datetime.datetime] = None
+    completed_date: Optional[datetime.datetime] = None
+    state: Optional[BackgroundJobState] = None
+    duration_ms: int = 0
+    attempts: int = 0
+    error_code: Optional[str] = None
+    error_message: Optional[str] = None
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class BackgroundJobOptions:
+    ref_id: Optional[str] = None
+    parent_id: Optional[int] = None
+    worker: Optional[str] = None
+    run_after: Optional[datetime.datetime] = None
+    callback: Optional[str] = None
+    depends_on: Optional[int] = None
+    user_id: Optional[str] = None
+    retry_limit: Optional[int] = None
+    reply_to: Optional[str] = None
+    tag: Optional[str] = None
+    batch_id: Optional[str] = None
+    created_by: Optional[str] = None
+    timeout_secs: Optional[int] = None
+    timeout: Optional[datetime.timedelta] = None
+    args: Optional[Dict[str, str]] = None
+    run_command: Optional[bool] = None
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class ScheduledTask:
+    id: int = 0
+    name: Optional[str] = None
+    interval: Optional[datetime.timedelta] = None
+    cron_expression: Optional[str] = None
+    request_type: Optional[str] = None
+    command: Optional[str] = None
+    request: Optional[str] = None
+    request_body: Optional[str] = None
+    options: Optional[BackgroundJobOptions] = None
+    last_run: Optional[datetime.datetime] = None
+    last_job_id: Optional[int] = None
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class CompletedJob(BackgroundJobBase):
+    pass
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class FailedJob(BackgroundJobBase):
+    pass
