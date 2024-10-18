@@ -54,6 +54,17 @@ __all__ = [
     'StringResponse',
     'StringsResponse',
     'AuditBase',
+    'BackgroundJobState',
+    'JobStatSummary',
+    'HourSummary',
+    'WorkerStats',
+    'BackgroundJobBase',
+    'BackgroundJob',
+    'JobSummary',
+    'BackgroundJobOptions',
+    'ScheduledTask',
+    'CompletedJob',
+    'FailedJob',
     'JsonServiceClient',
     'WebServiceException',
     'WebServiceExceptionType',
@@ -117,7 +128,10 @@ from .dtos import \
     UpdateEventSubscriberResponse, UserApiKey, GetApiKeys, GetApiKeysResponse, \
     RegenerateApiKeys, RegenerateApiKeysResponse, NavItem, GetNavItems, \
     GetNavItemsResponse, EmptyResponse, IdResponse, StringResponse, \
-    StringsResponse, AuditBase
+    StringsResponse, AuditBase, \
+    BackgroundJobState, JobStatSummary, HourSummary, WorkerStats, BackgroundJobBase, \
+    BackgroundJob, JobSummary, BackgroundJobOptions, ScheduledTask, CompletedJob, FailedJob
+
 
 from .clients import JsonServiceClient, WebServiceException, WebServiceExceptionType, \
     qsvalue, resolve_httpmethod
