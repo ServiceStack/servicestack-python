@@ -110,6 +110,20 @@ def has_request_body(method: str):
     return not (method == "GET" or method == "DELETE" or method == "HEAD" or method == "OPTIONS")
 
 
+def combine_with(base_url: str, relative_url: str):
+    if not base_url:
+        return relative_url
+    if not relative_url:
+        return base_url
+    # We want to handle relative urls different by maintaining the base_url path at all times
+    temp_relative_url = relative_url
+    temp_base_url = base_url
+    if not temp_base_url.endswith("/"):
+        temp_base_url += "/"
+    if temp_relative_url.startswith("/"):
+        temp_relative_url = temp_relative_url[1:]
+    return urljoin(temp_base_url, temp_relative_url)
+
 @dataclass_json
 @dataclass
 class SendContext:
@@ -213,11 +227,11 @@ class JsonServiceClient:
 
     def set_base_path(self, base_path:str=''):
         if not base_path:
-            self.reply_base_url = urljoin(self.base_url, 'json/reply') + "/"
-            self.oneway_base_url = urljoin(self.base_url, 'json/oneway') + "/"
+            self.reply_base_url = combine_with(self.base_url, 'json/reply') + "/"
+            self.oneway_base_url = combine_with(self.base_url, 'json/oneway') + "/"
         else:
-            self.reply_base_url = urljoin(self.base_url, base_path) + "/"
-            self.oneway_base_url = urljoin(self.base_url, base_path) + "/"
+            self.reply_base_url = combine_with(self.base_url, base_path) + "/"
+            self.oneway_base_url = combine_with(self.base_url, base_path) + "/"
         return self
 
     def set_credentials(self, username:str, password:str):
@@ -247,7 +261,7 @@ class JsonServiceClient:
         return self._get_cookie_value(SS_REFRESH_TOKEN_COOKIE)
 
     def create_url_from_dto(self, method: str, request: Any):
-        url = urljoin(self.reply_base_url, nameof(request))
+        url = combine_with(self.reply_base_url, nameof(request))
         if not has_request_body(method):
             url = append_querystring(url, to_dict(request, key_case=clean_camelcase))
         return url
@@ -276,7 +290,7 @@ class JsonServiceClient:
     def to_absolute_url(self, path_or_url: str):
         if path_or_url.startswith("http://") or path_or_url.startswith("https://"):
             return path_or_url
-        return urljoin(self.base_url, path_or_url)
+        return combine_with(self.base_url, path_or_url)
 
     def get_url(self, path: str, response_as: Type, args: Dict[str, Any] = None):
         return self.send_url(path, "GET", response_as, None, args)
@@ -356,7 +370,7 @@ class JsonServiceClient:
 
     def send_all(self, request_dtos: List[IReturn[T]]):
         request, item_response_as = self.assert_valid_batch_request(request_dtos)
-        url = urljoin(self.reply_base_url, nameof(request) + "[]")
+        url = combine_with(self.reply_base_url, nameof(request) + "[]")
 
         return self.send_request(SendContext(
             session=self._session,
@@ -371,7 +385,7 @@ class JsonServiceClient:
 
     def send_all_oneway(self, request_dtos: list):
         request, item_response_as = self.assert_valid_batch_request(request_dtos)
-        url = urljoin(self.oneway_base_url, nameof(request) + "[]")
+        url = combine_with(self.oneway_base_url, nameof(request) + "[]")
 
         self.send_request(SendContext(
             session=self._session,
@@ -482,7 +496,7 @@ class JsonServiceClient:
             if not url:
                 body_not_request_dto = info.request and info.body
                 if body_not_request_dto:
-                    url = urljoin(self.reply_base_url, nameof(info.request))
+                    url = combine_with(self.reply_base_url, nameof(info.request))
                     url = append_querystring(url, to_dict(info.request, key_case=clean_camelcase))
                 else:
                     url = self.create_url_from_dto(info.method, body)
@@ -564,3 +578,4 @@ class JsonServiceClient:
                 return res_dto
 
             return self._handle_error(response, e)
+

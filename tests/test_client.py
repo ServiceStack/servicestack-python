@@ -221,6 +221,19 @@ class TestApi(unittest.TestCase):
         response: HelloAllTypesResponse = client.put(request)
         self.assert_HelloAllTypesResponse(response)
 
+    def test_can_use_base_url_with_path(self):
+        custom_client = JsonServiceClient("https://openai.servicestack.net/v1/")
+        self.assertTrue(custom_client.base_url.startswith("https://openai.servicestack.net"))
+        self.assertIn("/v1",custom_client.reply_base_url)
+        self.assertIn("/v1",custom_client.oneway_base_url)
+
+        custom_client = JsonServiceClient("https://openai.servicestack.net")
+        self.assertTrue(custom_client.base_url.startswith("https://openai.servicestack.net"))
+        self.assertTrue(custom_client.reply_base_url.endswith("/api/"))
+        self.assertTrue(custom_client.oneway_base_url.endswith("/api/"))
+
+
+
     def test_does_handle_404_error(self):
         request = ThrowType(type="NotFound", message="not here")
         try:
