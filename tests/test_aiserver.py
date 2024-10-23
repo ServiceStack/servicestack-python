@@ -63,8 +63,8 @@ class TestAiServer(unittest.TestCase):
             self.assertEqual(len(response.text_outputs), 2)
 
             # Get both text outputs
-            text_with_timestamps = response.text_outputs[0].text
-            text_only = response.text_outputs[1].text
+            text_with_timestamps = response.text_outputs[1].text
+            text_only = response.text_outputs[0].text
 
             # Basic validation of outputs
             self.assertIsNotNone(text_with_timestamps)
