@@ -16,8 +16,8 @@ from dataclasses import dataclass
 from typing import BinaryIO, List, Optional, TypeVar, Union
 import mimetypes
 
-from servicestack.dtos import IReturn, IReturnVoid, IGet, IPost, IPut, IPatch, \
-    IDelete, ResponseStatus, EmptyResponse, GetAccessToken, GetAccessTokenResponse
+from servicestack.types import IDeleteDb, IPatchDb, IReturn, IReturnVoid, IGet, IPost, IPut, IPatch, \
+    IDelete, IUpdateDb, QueryBase, ResponseStatus, EmptyResponse, GetAccessToken, GetAccessTokenResponse
 from servicestack.log import Log
 from servicestack.reflection import TypeConverters, to_dict, nameof, is_list, is_dict, _resolve_forwardref, \
     has_type_vars, _dict_with_string_keys, _get_type_vars_map, from_json, to_json
@@ -66,15 +66,15 @@ def _resolve_response_type(request):
 
 
 def resolve_httpmethod(request):
-    if isinstance(request, IGet):
+    if isinstance(request, IGet) or isinstance(request, QueryBase):
         return "GET"
     if isinstance(request, IPost):
         return "POST"
-    if isinstance(request, IPut):
+    if isinstance(request, IPut) or isinstance(request, IUpdateDb):
         return "PUT"
-    if isinstance(request, IPatch):
+    if isinstance(request, IPatch) or isinstance(request, IPatchDb):
         return "PATCH"
-    if isinstance(request, IDelete):
+    if isinstance(request, IDelete) or isinstance(request, IDeleteDb):
         return "DELETE"
     return "POST"
 

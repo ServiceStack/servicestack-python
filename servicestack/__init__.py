@@ -115,7 +115,7 @@ __all__ = [
     'Bytes',
 ]
 
-from .dtos import \
+from .types import \
     IReturn, IReturnVoid, IGet, IPost, IPut, IDelete, IPatch, IOptions, IMeta, \
     IHasSessionId, IHasBearerToken, IHasVersion, ICrud, \
     ICreateDb, IUpdateDb, IPatchDb, IDeleteDb, ISaveDb, \
