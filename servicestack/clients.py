@@ -10,7 +10,11 @@ from urllib.parse import urljoin, quote_plus
 import requests
 from dataclasses_json import dataclass_json
 from requests.exceptions import HTTPError
-from requests.models import Response
+from requests.models import Response,RequestField, encode_multipart_formdata
+
+from dataclasses import dataclass
+from typing import BinaryIO, List, Optional, TypeVar, Union
+import mimetypes
 
 from servicestack.dtos import IReturn, IReturnVoid, IGet, IPost, IPut, IPatch, \
     IDelete, ResponseStatus, EmptyResponse, GetAccessToken, GetAccessTokenResponse
@@ -195,6 +199,17 @@ class WebServiceException(Exception):
 
 T = TypeVar('T')
 
+@dataclass
+class UploadFile:
+    field_name: Optional[str]
+    file_name: Optional[str]
+    content_type: Optional[str]
+    stream: BinaryIO
+
+    def __post_init__(self):
+        if not self.content_type and self.file_name:
+            guessed_type = mimetypes.guess_type(self.file_name)[0]
+            self.content_type = guessed_type or 'application/octet-stream'
 
 class JsonServiceClient:
     base_url: str = None
@@ -350,6 +365,71 @@ class JsonServiceClient:
             body_string=None,
             args=args,
             response_as=response_as))
+
+
+    def post_files_with_request(self, request_uri: str, request: Any,
+                                files: Union[UploadFile, List[UploadFile]]) -> T:
+        """
+        Post files with a request DTO using multipart/form-data
+
+        :param request_uri: The request URI
+        :param request: The request DTO
+        :param files: Single UploadFile or List of UploadFile objects
+        :return: Response DTO
+        """
+        if isinstance(files, UploadFile):
+            files = [files]
+
+        # Convert request DTO to dict
+        request_dict = to_dict(request, key_case=clean_camelcase)
+
+        # Prepare the files dictionary for requests
+        files_dict = {}
+        for file in files:
+            files_dict[file.field_name or 'upload'] = (
+                file.file_name,
+                file.stream,
+                file.content_type or 'application/octet-stream'
+            )
+
+        # Prepare headers
+        headers = self.headers.copy()
+        if self.bearer_token:
+            headers['Authorization'] = f'Bearer {self.bearer_token}'
+
+        url = self.to_absolute_url(request_uri)
+
+        try:
+            # Send the multipart request
+            response = self._session.post(
+                url,
+                data=request_dict,
+                files=files_dict,
+                headers=headers,
+                verify=self._session.verify
+            )
+
+            # Handle errors
+            response.raise_for_status()
+
+            # Parse response
+            response_type = _resolve_response_type(request)
+            if response_type is None:
+                return response.json()
+
+            if response_type is str:
+                return response.text
+
+            if response_type is bytes:
+                return response.content
+
+            return from_json(response_type, response.text)
+
+        finally:
+            # Close all file streams
+            for file in files:
+                file.stream.close()
+
 
     @staticmethod
     def assert_valid_batch_request(request_dtos: list):
