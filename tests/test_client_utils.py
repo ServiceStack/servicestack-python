@@ -55,9 +55,10 @@ class ClientUtils(unittest.TestCase):
                          "<table><tbody><tr><td>A</td></tr><tr><td>1</td></tr></tbody></table>")
         self.assertEqual(sanitize_html(htmldump([{"A": 1, "B": 2}, {"A": 3, "B": 4}])),
                          "<table><thead><tr><th>A</th><th>B</th></tr></head><tbody><tr><td>1</td><td>2</td></tr><tr><td>3</td><td>4</td></tr></tbody></table>")
-
-    def test_can_send_GetLocations(self):
-        client = JsonServiceClient("https://covid-vac-watch.netcore.io")
-        response = client.send(GetLocations())
-        printdump(response)
-        printhtmldump(response.locations)
+    
+    # covid-vac-watch.netcore.io is down
+    # def test_can_send_GetLocations(self):
+    #     client = JsonServiceClient("https://covid-vac-watch.netcore.io")
+    #     response = client.send(GetLocations())
+    #     printdump(response)
+    #     printhtmldump(response.locations)

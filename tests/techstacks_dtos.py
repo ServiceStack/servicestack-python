@@ -1,11 +1,10 @@
 """ Options:
-Date: 2021-07-11 17:01:34
-Version: 5.111
-Tip: To override a DTO option, remove "//" prefix before updating
+Date: 2024-10-23 07:43:30
+Version: 8.41
+Tip: To override a DTO option, remove "#" prefix before updating
 BaseUrl: https://techstacks.io
 
 #GlobalNamespace: 
-#MakePropertiesOptional: False
 #AddServiceStackTypes: True
 #AddResponseStatus: False
 #AddImplicitVersion: 
@@ -255,26 +254,6 @@ class TechnologyStackView:
     comments_post_id: Optional[int] = None
     view_count: Optional[int] = None
     fav_count: Optional[int] = None
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class UserVoiceUser:
-    id: int = 0
-    name: Optional[str] = None
-    email: Optional[str] = None
-    avatar_url: Optional[str] = None
-    created_at: datetime.datetime = datetime.datetime(1, 1, 1)
-    updated_at: datetime.datetime = datetime.datetime(1, 1, 1)
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class UserVoiceComment:
-    text: Optional[str] = None
-    formatted_text: Optional[str] = None
-    created_at: datetime.datetime = datetime.datetime(1, 1, 1)
-    creator: Optional[UserVoiceUser] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -578,6 +557,13 @@ class Option:
     name: Optional[str] = None
     title: Optional[str] = None
     value: Optional[TechnologyTier] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class HelloResponse:
+    result: Optional[str] = None
+    response_status: Optional[ResponseStatus] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -919,13 +905,6 @@ class GetPageStatsResponse:
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class HourlyTaskResponse:
-    meta: Optional[Dict[str, str]] = None
-    response_status: Optional[ResponseStatus] = None
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
 class OverviewResponse:
     created: datetime.datetime = datetime.datetime(1, 1, 1)
     top_users: Optional[List[UserInfo]] = None
@@ -1050,15 +1029,6 @@ class GetUserInfoResponse:
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class SyncDiscourseSiteResponse:
-    time_taken: Optional[str] = None
-    user_logs: Optional[List[str]] = None
-    posts_logs: Optional[List[str]] = None
-    response_status: Optional[ResponseStatus] = None
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
 class LogoUrlApprovalResponse:
     result: Optional[Technology] = None
 
@@ -1071,36 +1041,22 @@ class LockStackResponse:
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class EmailTestRespoonse:
-    response_status: Optional[ResponseStatus] = None
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class ImportUserResponse:
-    id: int = 0
-    response_status: Optional[ResponseStatus] = None
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class ImportUserVoiceSuggestionResponse:
-    post_id: int = 0
-    post_slug: Optional[str] = None
+class EmailTestResponse:
     response_status: Optional[ResponseStatus] = None
 
 
 # @Route("/ping")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class Ping:
+class Ping(IGet):
     pass
 
 
+# @Route("/hello/{Name}")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class DummyTypes:
-    post: Optional[List[Post]] = None
+class Hello(IReturn[HelloResponse], IGet):
+    name: Optional[str] = None
 
 
 # @Route("/orgs/{Id}", "GET")
@@ -1330,7 +1286,7 @@ class UpdateOrganizationMemberInvite(IReturn[UpdateOrganizationMemberInviteRespo
 # @Route("/posts", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryPosts(QueryDb[Post], IReturn[QueryResponse[Post]], IGet):
+class QueryPosts(QueryDb[Post], IReturn[QueryResponse[Post]]):
     ids: Optional[List[int]] = None
     organization_id: Optional[int] = None
     organization_ids: Optional[List[int]] = None
@@ -1550,14 +1506,15 @@ class UserPostCommentReport(IReturn[UserPostCommentReportResponse], IPut):
     report_notes: Optional[str] = None
 
 
-# @Route("/prerender/{Path*}", "PUT")
+# @Route("/prerender/{**Path}", "PUT")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class StorePreRender(IReturnVoid, IPut):
     path: Optional[str] = None
+    request_stream: Optional[bytes] = None
 
 
-# @Route("/prerender/{Path*}", "GET")
+# @Route("/prerender/{**Path}", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class GetPreRender(IReturn[str], IGet):
@@ -1565,6 +1522,7 @@ class GetPreRender(IReturn[str], IGet):
 
 
 # @Route("/my-session")
+# @ValidateRequest(Validator="IsAuthenticated")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class SessionInfo(IReturn[SessionInfoResponse], IGet):
@@ -1619,7 +1577,7 @@ class GetAllTechnologies(IReturn[GetAllTechnologiesResponse], IGet):
 # @AutoQueryViewer(DefaultSearchField="Tier", DefaultSearchText="Data", DefaultSearchType="=", Description="Explore different Technologies", IconUrl="octicon:database", Title="Find Technologies")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class FindTechnologies(QueryDb2[Technology, TechnologyView], IReturn[QueryResponse[TechnologyView]], IGet):
+class FindTechnologies(QueryDb2[Technology, TechnologyView], IReturn[QueryResponse[TechnologyView]]):
     ids: Optional[List[int]] = None
     name: Optional[str] = None
     vendor_name: Optional[str] = None
@@ -1631,7 +1589,7 @@ class FindTechnologies(QueryDb2[Technology, TechnologyView], IReturn[QueryRespon
 # @Route("/technology/query")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryTechnology(QueryDb2[Technology, TechnologyView], IReturn[QueryResponse[TechnologyView]], IGet):
+class QueryTechnology(QueryDb2[Technology, TechnologyView], IReturn[QueryResponse[TechnologyView]]):
     ids: Optional[List[int]] = None
     name: Optional[str] = None
     vendor_name: Optional[str] = None
@@ -1707,25 +1665,11 @@ class GetPageStats(IReturn[GetPageStatsResponse], IGet):
     id: Optional[int] = None
 
 
-# @Route("/cache/clear")
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class ClearCache(IReturn[str], IGet):
-    pass
-
-
-# @Route("/tasks/hourly")
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class HourlyTask(IReturn[HourlyTaskResponse], IGet):
-    force: bool = False
-
-
 # @Route("/techstacks/search")
 # @AutoQueryViewer(DefaultSearchField="Description", DefaultSearchText="ServiceStack", DefaultSearchType="Contains", Description="Explore different Technology Stacks", IconUrl="material-icons:cloud", Title="Find Technology Stacks")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class FindTechStacks(QueryDb2[TechnologyStack, TechnologyStackView], IReturn[QueryResponse[TechnologyStackView]], IGet):
+class FindTechStacks(QueryDb2[TechnologyStack, TechnologyStackView], IReturn[QueryResponse[TechnologyStackView]]):
     ids: Optional[List[int]] = None
     name: Optional[str] = None
     vendor_name: Optional[str] = None
@@ -1737,7 +1681,7 @@ class FindTechStacks(QueryDb2[TechnologyStack, TechnologyStackView], IReturn[Que
 # @Route("/techstacks/query")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryTechStacks(QueryDb2[TechnologyStack, TechnologyStackView], IReturn[QueryResponse[TechnologyStackView]], IGet):
+class QueryTechStacks(QueryDb2[TechnologyStack, TechnologyStackView], IReturn[QueryResponse[TechnologyStackView]]):
     ids: Optional[List[int]] = None
     name: Optional[str] = None
     vendor_name: Optional[str] = None
@@ -1868,6 +1812,7 @@ class RemoveFavoriteTechnology(IReturn[FavoriteTechnologyResponse], IDelete):
 
 
 # @Route("/my-feed")
+# @ValidateRequest(Validator="IsAuthenticated")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class GetUserFeed(IReturn[GetUserFeedResponse], IGet):
@@ -1881,18 +1826,19 @@ class GetUsersKarma(IReturn[GetUsersKarmaResponse], IGet):
     user_ids: Optional[List[int]] = None
 
 
-# @Route("/userinfo/{UserName}")
+# @Route("/userinfo/{Id}")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class GetUserInfo(IReturn[GetUserInfoResponse], IGet):
+    id: int = 0
     user_name: Optional[str] = None
 
 
-# @Route("/users/{UserName}/avatar", "GET")
+# @Route("/users/{UserId}/avatar", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class UserAvatar(IGet):
-    user_name: Optional[str] = None
+    user_id: int = 0
 
 
 # @Route("/mq/start")
@@ -1923,13 +1869,6 @@ class MqStatus(IReturn[str]):
     pass
 
 
-# @Route("/sync/discourse/{Site}")
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class SyncDiscourseSite(IReturn[SyncDiscourseSiteResponse], IPost):
-    site: Optional[str] = None
-
-
 # @Route("/admin/technology/{TechnologyId}/logo")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
@@ -1942,71 +1881,49 @@ class LogoUrlApproval(IReturn[LogoUrlApprovalResponse], IPut):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class LockTechStack(IReturn[LockStackResponse], IPut):
+    """
+    Limit updates to TechStack to Owner or Admin users
+    """
+
+    # @Validate(Validator="GreaterThan(0)")
     technology_stack_id: int = 0
+
     is_locked: bool = False
 
 
 # @Route("/admin/technology/{TechnologyId}/lock")
+# @Api(Description="Limit updates to Technology to Owner or Admin users")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class LockTech(IReturn[LockStackResponse], IPut):
+    """
+    Limit updates to Technology to Owner or Admin users
+    """
+
+    # @Validate(Validator="GreaterThan(0)")
     technology_id: int = 0
+
     is_locked: bool = False
 
 
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class DummyTypes:
+    post: Optional[List[Post]] = None
+
+
 # @Route("/email/post/{PostId}")
+# @ValidateRequest(Validator="IsAdmin")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class EmailTest(IReturn[EmailTestRespoonse]):
+class EmailTest(IReturn[EmailTestResponse]):
     post_id: Optional[int] = None
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class ImportUser(IReturn[ImportUserResponse], IPost):
-    user_name: Optional[str] = None
-    email: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    display_name: Optional[str] = None
-    company: Optional[str] = None
-    ref_source: Optional[str] = None
-    ref_id: Optional[int] = None
-    ref_id_str: Optional[str] = None
-    ref_urn: Optional[str] = None
-    default_profile_url: Optional[str] = None
-    meta: Optional[Dict[str, str]] = None
-
-
-# @Route("/import/uservoice/suggestion")
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class ImportUserVoiceSuggestion(IReturn[ImportUserVoiceSuggestionResponse], IPost):
-    organization_id: int = 0
-    url: Optional[str] = None
-    id: int = 0
-    topic_id: int = 0
-    state: Optional[str] = None
-    title: Optional[str] = None
-    slug: Optional[str] = None
-    category: Optional[str] = None
-    text: Optional[str] = None
-    formatted_text: Optional[str] = None
-    vote_count: int = 0
-    closed_at: Optional[datetime.datetime] = None
-    status_key: Optional[str] = None
-    status_hex_color: Optional[str] = None
-    status_changed_by: Optional[UserVoiceUser] = None
-    creator: Optional[UserVoiceUser] = None
-    response: Optional[UserVoiceComment] = None
-    created_at: datetime.datetime = datetime.datetime(1, 1, 1)
-    updated_at: datetime.datetime = datetime.datetime(1, 1, 1)
 
 
 # @Route("/posts/comment", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class QueryPostComments(QueryDb[PostComment], IReturn[QueryResponse[PostComment]], IGet):
+class QueryPostComments(QueryDb[PostComment], IReturn[QueryResponse[PostComment]]):
     id: Optional[int] = None
     user_id: Optional[int] = None
     post_id: Optional[int] = None

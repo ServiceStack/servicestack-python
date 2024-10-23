@@ -1,11 +1,10 @@
 """ Options:
-Date: 2021-07-11 19:01:31
-Version: 5.111
-Tip: To override a DTO option, remove "//" prefix before updating
+Date: 2024-10-23 07:43:28
+Version: 8.41
+Tip: To override a DTO option, remove "#" prefix before updating
 BaseUrl: https://test.servicestack.net
 
 #GlobalNamespace: 
-#MakePropertiesOptional: False
 #AddServiceStackTypes: True
 #AddResponseStatus: False
 #AddImplicitVersion: 
@@ -84,6 +83,11 @@ class FluentSingleValidation:
     value: Optional[str] = None
 
 
+class IGeneration:
+    ref_id: Optional[str] = None
+    tag: Optional[str] = None
+
+
 class IAuthTokens:
     provider: Optional[str] = None
     user_id: Optional[str] = None
@@ -157,6 +161,9 @@ class AuthUserSession:
     two_factor_enabled: Optional[bool] = None
     security_stamp: Optional[str] = None
     type: Optional[str] = None
+    recovery_token: Optional[str] = None
+    ref_id: Optional[int] = None
+    ref_id_str: Optional[str] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -298,12 +305,6 @@ class DayOfWeek(str, Enum):
 class ScopeType(IntEnum):
     GLOBAL_ = 1
     SALE = 2
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class PingService:
-    pass
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -517,6 +518,57 @@ class MessageCrud(IReturnVoid, ISaveDb["MessageCrud"]):
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
+class ArtifactOutput:
+    """
+    Output object for generated artifacts
+    """
+
+    # @ApiMember(Description="URL to access the generated image")
+    url: Optional[str] = None
+    """
+    URL to access the generated image
+    """
+
+
+    # @ApiMember(Description="Filename of the generated image")
+    file_name: Optional[str] = None
+    """
+    Filename of the generated image
+    """
+
+
+    # @ApiMember(Description="Provider used for image generation")
+    provider: Optional[str] = None
+    """
+    Provider used for image generation
+    """
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class TextOutput:
+    """
+    Output object for generated text
+    """
+
+    # @ApiMember(Description="The generated text")
+    text: Optional[str] = None
+    """
+    The generated text
+    """
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class UploadInfo:
+    name: Optional[str] = None
+    file_name: Optional[str] = None
+    content_length: int = 0
+    content_type: Optional[str] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
 class MetadataTestNestedChild:
     name: Optional[str] = None
 
@@ -683,7 +735,7 @@ T = TypeVar('T')
 class QueryResponseAlt(Generic[T]):
     offset: int = 0
     total: int = 0
-    results: Optional[List[T]] = None
+    results: Optional[List[Item]] = None
     meta: Optional[Dict[str, str]] = None
     response_status: Optional[ResponseStatus] = None
 
@@ -692,6 +744,12 @@ class QueryResponseAlt(Generic[T]):
 @dataclass
 class Items:
     results: Optional[List[Item]] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class ReturnCustom400Response:
+    response_status: Optional[ResponseStatus] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -712,6 +770,43 @@ class ThrowValidationResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class ThrowBusinessErrorResponse:
+    response_status: Optional[ResponseStatus] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class GenerationResponse:
+    """
+    Response object for generation requests
+    """
+
+    # @ApiMember(Description="List of generated outputs")
+    outputs: Optional[List[ArtifactOutput]] = None
+    """
+    List of generated outputs
+    """
+
+
+    # @ApiMember(Description="List of generated text outputs")
+    text_outputs: Optional[List[TextOutput]] = None
+    """
+    List of generated text outputs
+    """
+
+
+    # @ApiMember(Description="Detailed response status information")
+    response_status: Optional[ResponseStatus] = None
+    """
+    Detailed response status information
+    """
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class TestFileUploadsResponse:
+    id: Optional[int] = None
+    ref_id: Optional[str] = None
+    files: Optional[List[UploadInfo]] = None
     response_status: Optional[ResponseStatus] = None
 
 
@@ -1190,6 +1285,13 @@ class GetNakedItems(IReturn[List[Item]]):
     pass
 
 
+# @ValidateRequest(Validator="IsAuthenticated")
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class DeclarativeValidationAuth:
+    name: Optional[str] = None
+
+
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class DeclarativeCollectiveValidationTest(IReturn[EmptyResponse]):
@@ -1265,6 +1367,14 @@ class ThrowCustom400:
     message: Optional[str] = None
 
 
+# @Route("/returncustom400")
+# @Route("/returncustom400/{Message}")
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class ReturnCustom400(IReturn[ReturnCustom400Response]):
+    message: Optional[str] = None
+
+
 # @Route("/throw/{Type}")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
@@ -1287,6 +1397,43 @@ class ThrowValidation(IReturn[ThrowValidationResponse]):
 @dataclass
 class ThrowBusinessError(IReturn[ThrowBusinessErrorResponse]):
     pass
+
+
+# @Api(Description="Convert speech to text")
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class SpeechToText(IReturn[GenerationResponse], IGeneration):
+    """
+    Convert speech to text
+    """
+
+    # @ApiMember(Description="The audio stream containing the speech to be transcribed")
+    # @Required()
+    audio: Optional[bytes] = None
+    """
+    The audio stream containing the speech to be transcribed
+    """
+
+
+    # @ApiMember(Description="Optional client-provided identifier for the request")
+    ref_id: Optional[str] = None
+    """
+    Optional client-provided identifier for the request
+    """
+
+
+    # @ApiMember(Description="Tag to identify the request")
+    tag: Optional[str] = None
+    """
+    Tag to identify the request
+    """
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class TestFileUploads(IReturn[TestFileUploadsResponse]):
+    id: Optional[int] = None
+    ref_id: Optional[str] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -1468,6 +1615,14 @@ class Hello(IReturn[HelloResponse]):
     title: Optional[str] = None
 
 
+# @Route("/hello-secure/{Name}")
+# @ValidateRequest(Validator="IsAuthenticated")
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class HelloSecure(IReturn[HelloResponse]):
+    name: Optional[str] = None
+
+
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloAnnotated(IReturn[HelloAnnotatedResponse]):
@@ -1494,6 +1649,18 @@ class HelloList(IReturn[List[ListResult]]):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloArray(IReturn[List[ArrayResult]]):
+    names: Optional[List[str]] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class HelloMap(IReturn[Dict[str, ArrayResult]]):
+    names: Optional[List[str]] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class HelloQueryResponse(IReturn[QueryResponse[str]]):
     names: Optional[List[str]] = None
 
 
@@ -1748,6 +1915,27 @@ class ReturnStream(IReturn[bytes]):
     data: Optional[bytes] = None
 
 
+# @Route("/return/json")
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class ReturnJson:
+    pass
+
+
+# @Route("/return/json/header")
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class ReturnJsonHeader:
+    pass
+
+
+# @Route("/write/json")
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class WriteJson:
+    pass
+
+
 # @Route("/Request1", "GET")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
@@ -1768,6 +1956,7 @@ class GetRequest2(IReturn[List[ReturnedDto]], IGet):
 class SendJson(IReturn[str]):
     id: int = 0
     name: Optional[str] = None
+    request_stream: Optional[bytes] = None
 
 
 # @Route("/sendtext")
@@ -1777,6 +1966,7 @@ class SendText(IReturn[str]):
     id: int = 0
     name: Optional[str] = None
     content_type: Optional[str] = None
+    request_stream: Optional[bytes] = None
 
 
 # @Route("/sendraw")
@@ -1786,6 +1976,7 @@ class SendRaw(IReturn[bytes]):
     id: int = 0
     name: Optional[str] = None
     content_type: Optional[str] = None
+    request_stream: Optional[bytes] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)

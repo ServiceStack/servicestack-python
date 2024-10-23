@@ -362,14 +362,14 @@ class TestApi(unittest.TestCase):
     # requires Python 3.9
     def test_can_send_all_oneway_IReturn_batch_request(self):
         client = create_test_client()
-        client.request_filter = lambda req: self.assertTrue(req.url.endswith("/json/oneway/Hello[]"))
+        client.request_filter = lambda req: self.assertTrue(req.url.endswith("/api/Hello[]"))
         requests = list(map(lambda name: Hello(name=name), ["foo", "bar", "baz"]))
         client.send_all_oneway(requests)
 
     # requires Python 3.9
     def test_can_send_all_oneway_IReturnVoid_batch_request(self):
         client = create_test_client()
-        client.request_filter = lambda req: self.assertTrue(req.url.endswith("/json/oneway/HelloReturnVoid[]"))
+        client.request_filter = lambda req: self.assertTrue(req.url.endswith("/api/HelloReturnVoid[]"))
         requests = list(map(lambda name: HelloReturnVoid(name=name), [1, 2, 3]))
         client.send_all_oneway(requests)
 
@@ -415,7 +415,7 @@ class TestApi(unittest.TestCase):
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_get_using_absolute_url(self):
-        response: HelloResponse = client.get_url("http://test.servicestack.net/hello/World", response_as=HelloResponse)
+        response: HelloResponse = client.get_url("https://test.servicestack.net/hello/World", response_as=HelloResponse)
         self.assertEqual(response.result, "Hello, World!")
 
     def test_can_get_using_route_and_querystring(self):
@@ -445,8 +445,10 @@ class TestApi(unittest.TestCase):
             client.get(EchoTypes(int_=1, string="foo"))
         except WebServiceException as e:
             self.assertEqual(e.status_code, 500)
-            self.assertIn("getaddrinfo failed", e.status_description)
+            self.assertIn("Max retries exceeded with url", e.status_description)
             # self.assertTrue("getaddrinfo failed" in handled_ex.status_description)
+        except e:
+            self.fail("Expected WebServiceException")
 
     def test_can_handle_naked_List(self):
         request = HelloList(names=['A', 'B', 'C'])

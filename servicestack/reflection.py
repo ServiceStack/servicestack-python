@@ -1,5 +1,5 @@
 import base64
-import collections
+import collections.abc as collections
 import decimal
 import inspect
 import json

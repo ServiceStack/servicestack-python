@@ -6,7 +6,7 @@ from servicestack import JsonServiceClient, Authenticate
 
 # TEST_URL = "https://localhost:5001"
 # TEST_URL = "http://localhost:5000"
-TEST_URL = "http://test.servicestack.net"
+TEST_URL = "https://test.servicestack.net"
 TECHSTACKS_URL = "https://techstacks.io"
 # Load AI Server URL from environment variable
 AI_SERVER_URL = os.getenv('AI_SERVER_URL')
@@ -39,3 +39,6 @@ def create_aiserver_client():
     client.set_bearer_token(api_key)
 
     return client
+
+def log():
+    pass

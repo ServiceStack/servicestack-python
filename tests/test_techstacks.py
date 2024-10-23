@@ -29,12 +29,12 @@ class TestTechStacks(unittest.TestCase):
         except WebServiceException as e:
             self.assertEqual(e.status_code, 405)
             self.assertEqual(e.response_status.error_code, "NotImplementedException")
-            self.assertEqual(e.response_status.message, "The operation 'Overview' does not exist for this service")
+            self.assertEqual(e.response_status.message, "The operation does not exist for this service")
 
     def test_should_throw_401(self):
         client = create_techstacks_client()
         try:
-            client.get(CreateTechnology())
+            client.post(CreateTechnology())
             self.fail("should throw")
         except WebServiceException as e:
             self.assertEqual(e.status_code, 401)
