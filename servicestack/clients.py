@@ -374,7 +374,7 @@ class JsonServiceClient:
         :param files: Single UploadFile or List of UploadFile objects
         :return: Response DTO
         """
-        return self.post_files_with_request_url(combine_with(self.reply_base_url, nameof(request)), request, [files])
+        return self.post_files_with_request_url(combine_with(self.reply_base_url, nameof(request)), request, [file])
 
     def post_file_with_request_url(self, request_uri: str, request: IReturn[T], file: UploadFile) -> T:
         """
@@ -385,7 +385,7 @@ class JsonServiceClient:
         :param files: Single UploadFile or List of UploadFile objects
         :return: Response DTO
         """
-        return self.post_files_with_request_url(combine_with(self.reply_base_url, nameof(request)), request, [files])
+        return self.post_files_with_request_url(combine_with(self.reply_base_url, nameof(request)), request, [file])
 
     def post_files_with_request(self, request: IReturn[T], files: List[UploadFile]) -> T:
         """
