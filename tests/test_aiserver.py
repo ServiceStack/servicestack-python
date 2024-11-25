@@ -93,7 +93,7 @@ class TestAiServer(unittest.TestCase):
             )
 
             # Send request with file
-            response: GenerationResponse = self.client.post_files_with_request(
+            response: GenerationResponse = self.client.post_files_with_request_url(
                 request_uri="/api/ImageToImage",
                 request=request,
                 files=upload
