@@ -5,9 +5,11 @@ import unittest
 import os
 from typing import List
 
+import requests
+
 from servicestack.clients import UploadFile
 from .config import *
-from .aiserver_dtos import SpeechToText, GenerationResponse
+from .aiserver_dtos import SpeechToText, GenerationResponse, ImageToImage
 
 
 def create_aiserver_client():
@@ -72,6 +74,49 @@ class TestAiServer(unittest.TestCase):
             print("Text with timestamps:", text_with_timestamps)
             print("Text only:", text_only)
 
+
+    def test_image_to_image(self):
+        """Test image to image functionality with file upload"""
+        request = ImageToImage()
+        request.positive_prompt = "A beautiful landscape painting"
+        request.negative_prompt = "A pixelated image"
+
+        request.model = "sdxl-lightning"
+
+        # Open the test image file in binary read mode
+        with open("tests/files/test_image.png", "rb") as image_file:
+            upload = UploadFile(
+                field_name="image",
+                file_name="test_image.png",
+                content_type="image/png",
+                stream=image_file
+            )
+
+            # Send request with file
+            response: GenerationResponse = self.client.post_files_with_request(
+                request_uri="/api/ImageToImage",
+                request=request,
+                files=upload
+            )
+
+            # Verify response structure
+            self.assertIsNotNone(response)
+            self.assertTrue(hasattr(response, 'outputs'))
+            self.assertIsInstance(response.outputs, List)
+            self.assertEqual(len(response.outputs), 1)
+
+            # Get image output
+            image_output_url = response.outputs[0].url
+
+            # Download the image output
+            image_output = requests.get(image_output_url).content
+
+            # Basic validation of output
+            self.assertIsNotNone(image_output)
+
+            # Save image to file
+            with open("tests/files/image_output.webp", "wb") as output_file:
+                output_file.write(image_output)
 
 if __name__ == '__main__':
     # When running this file directly, automatically set RUN_AI_TESTS
