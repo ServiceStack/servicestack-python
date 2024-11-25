@@ -43,18 +43,16 @@ class TestAiServer(unittest.TestCase):
 
         # Open the test audio file in binary read mode
         with open("tests/files/test_audio.wav", "rb") as audio_file:
-            upload = UploadFile(
-                field_name="audio",
-                file_name="test_audio.wav",
-                content_type="audio/wav",
-                stream=audio_file
-            )
 
             # Send request with file
-            response: GenerationResponse = self.client.post_files_with_request(
+            response: GenerationResponse = self.client.post_file_with_request(
                 request=SpeechToText(),
-                files=upload
-            )
+                file=UploadFile(
+                    field_name="audio",
+                    file_name="test_audio.wav",
+                    content_type="audio/wav",
+                    stream=audio_file
+                ))
 
             # Verify response structure
             self.assertIsNotNone(response)
@@ -85,19 +83,16 @@ class TestAiServer(unittest.TestCase):
 
         # Open the test image file in binary read mode
         with open("tests/files/test_image.png", "rb") as image_file:
-            upload = UploadFile(
-                field_name="image",
-                file_name="test_image.png",
-                content_type="image/png",
-                stream=image_file
-            )
 
             # Send request with file
-            response: GenerationResponse = self.client.post_files_with_request_url(
-                request_uri="/api/ImageToImage",
+            response: GenerationResponse = self.client.post_file_with_request(
                 request=request,
-                files=upload
-            )
+                file=UploadFile(
+                    field_name="image",
+                    file_name="test_image.png",
+                    content_type="image/png",
+                    stream=image_file
+                ))
 
             # Verify response structure
             self.assertIsNotNone(response)

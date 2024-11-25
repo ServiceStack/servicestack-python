@@ -366,8 +366,28 @@ class JsonServiceClient:
             args=args,
             response_as=response_as))
 
-    def post_files_with_request(self, request: IReturn[T],
-                                files: Union[UploadFile, List[UploadFile]]) -> T:
+    def post_file_with_request(self, request: IReturn[T], file: UploadFile) -> T:
+        """
+        Post file with a request DTO using multipart/form-data
+
+        :param request: The request DTO
+        :param files: Single UploadFile or List of UploadFile objects
+        :return: Response DTO
+        """
+        return self.post_files_with_request_url(combine_with(self.reply_base_url, nameof(request)), request, [files])
+
+    def post_file_with_request_url(self, request_uri: str, request: IReturn[T], file: UploadFile) -> T:
+        """
+        Post file with a request DTO using multipart/form-data
+
+        :param request_uri: The request URI
+        :param request: The request DTO
+        :param files: Single UploadFile or List of UploadFile objects
+        :return: Response DTO
+        """
+        return self.post_files_with_request_url(combine_with(self.reply_base_url, nameof(request)), request, [files])
+
+    def post_files_with_request(self, request: IReturn[T], files: List[UploadFile]) -> T:
         """
         Post files with a request DTO using multipart/form-data
 
@@ -377,8 +397,7 @@ class JsonServiceClient:
         """
         return self.post_files_with_request_url(combine_with(self.reply_base_url, nameof(request)), request, files)
 
-    def post_files_with_request_url(self, request_uri: str, request: Any,
-                                files: Union[UploadFile, List[UploadFile]]) -> T:
+    def post_files_with_request_url(self, request_uri: str, request: Any, files: List[UploadFile]) -> T:
         """
         Post files with a request DTO using multipart/form-data
 
