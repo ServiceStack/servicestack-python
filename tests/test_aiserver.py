@@ -38,7 +38,6 @@ class TestAiServer(unittest.TestCase):
 
     def test_can_speech_to_text(self):
         """Test speech to text functionality with file upload"""
-        request = SpeechToText()
 
         # Open the test audio file in binary read mode
         with open("tests/files/test_audio.wav", "rb") as audio_file:
@@ -51,8 +50,7 @@ class TestAiServer(unittest.TestCase):
 
             # Send request with file
             response: GenerationResponse = self.client.post_files_with_request(
-                request_uri="/api/SpeechToText",
-                request=request,
+                request=SpeechToText(),
                 files=upload
             )
 
