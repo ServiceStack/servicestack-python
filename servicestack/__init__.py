@@ -68,6 +68,7 @@ __all__ = [
     'JsonServiceClient',
     'WebServiceException',
     'WebServiceExceptionType',
+    'UploadFile',
     'qsvalue',
     'resolve_httpmethod',
     'TypeConverters',
@@ -133,7 +134,7 @@ from .types import \
     BackgroundJob, JobSummary, BackgroundJobOptions, ScheduledTask, CompletedJob, FailedJob
 
 
-from .clients import JsonServiceClient, WebServiceException, WebServiceExceptionType, \
+from .clients import JsonServiceClient, WebServiceException, WebServiceExceptionType, UploadFile, \
     qsvalue, resolve_httpmethod
 
 from .reflection import TypeConverters, to_json, from_json, all_keys, to_dict, convert, is_optional, \
