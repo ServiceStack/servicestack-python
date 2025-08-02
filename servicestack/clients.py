@@ -414,7 +414,6 @@ class JsonServiceClient:
         request_tuples = []
         for k, v in request_dict.items():
             request_tuples.append((k, to_json(v, compact=True)))
-        print(request_tuples)
 
         # Prepare the files dictionary for requests
         files_dict = {}
