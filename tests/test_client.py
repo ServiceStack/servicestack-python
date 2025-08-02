@@ -3,9 +3,10 @@
 
 import unittest
 import dataclasses
+import datetime
 import json
+import io
 from .dtos import *
-from datetime import datetime, timedelta, timezone
 from servicestack import JsonServiceClient, WebServiceException, to_json
 from .config import create_test_client
 
@@ -32,9 +33,9 @@ def create_AllTypes():
         double=2.2,
         decimal=decimal.Decimal(3.0),
         string="string",
-        date_time=datetime(2001, 1, 1, tzinfo=timezone.utc),
-        date_time_offset=datetime(2001, 1, 1, tzinfo=timezone.utc),
-        time_span=timedelta(hours=1),
+        date_time=datetime.datetime(2001, 1, 1, tzinfo=datetime.timezone.utc),
+        date_time_offset=datetime.datetime(2001, 1, 1, tzinfo=datetime.timezone.utc),
+        time_span=datetime.timedelta(hours=1),
         guid="ea762009b66c410b9bf5ce21ad519249",
         string_list=["A", "B", "C"],
         string_array=["D", "E", "F"],
@@ -90,9 +91,9 @@ def assert_AllTypes(test: unittest.TestCase, dto: AllTypes):
     test.assertEqual(dto.double, 2.2)
     test.assertEqual(dto.decimal, 3.0)
     test.assertEqual(dto.string, "string")
-    test.assertEqual(dto.date_time, datetime(2001, 1, 1, tzinfo=timezone.utc))
-    test.assertEqual(dto.date_time_offset, datetime(2001, 1, 1, tzinfo=timezone.utc))
-    test.assertEqual(dto.time_span, timedelta(hours=1))
+    test.assertEqual(dto.date_time, datetime.datetime(2001, 1, 1, tzinfo=datetime.timezone.utc))
+    test.assertEqual(dto.date_time_offset, datetime.datetime(2001, 1, 1, tzinfo=datetime.timezone.utc))
+    test.assertEqual(dto.time_span, datetime.timedelta(hours=1))
     test.assertEqual(dto.guid, "ea762009b66c410b9bf5ce21ad519249")
     test.assertListEqual(dto.string_list, ["A", "B", "C"])
     test.assertListEqual(dto.string_array, ["D", "E", "F"])
@@ -454,3 +455,70 @@ class TestApi(unittest.TestCase):
         request = HelloList(names=['A', 'B', 'C'])
         response: List[ListResult] = client.get(request)
         self.assertEqual(len(response), 3)
+
+    def test_upload_with_complex_request_dto(self):
+        all_collection_types=create_AllCollectionTypes()        
+        dto = TestUploadWithDto(
+            int_=1,
+            nullable_id=None,
+            long=2,
+            double=4.0,
+            string='string',
+            date_time=datetime.datetime(1, 1, 1, tzinfo=datetime.timezone.utc),
+            int_array=all_collection_types.int_array,
+            int_list=all_collection_types.int_list,
+            string_array=all_collection_types.string_array,
+            string_list=all_collection_types.string_list,
+            poco_array=all_collection_types.poco_array,
+            poco_list=all_collection_types.poco_list,
+            poco_lookup=all_collection_types.poco_lookup,
+            poco_lookup_map=all_collection_types.poco_lookup_map,
+            map_list={
+              'A': ['a', 'b', 'c'],
+              'B': ['d', 'e', 'f']
+            },
+        )
+
+        # print("\nREQUEST:")
+        # print(to_jsv_data(dto))
+
+        response = client.post_file_with_request(
+            request=dto, 
+            file=UploadFile(
+                field_name="image",
+                file_name="test_image.png",
+                content_type="image/png",
+                stream=io.BytesIO()
+            ))
+
+        # print("\nRESPONSE:")
+        # print(response)
+        
+        self.assertEqual(response.int_, dto.int_)
+        self.assertEqual(response.nullable_id, dto.nullable_id)
+        self.assertEqual(response.long, dto.long)
+        self.assertEqual(response.double, dto.double)
+        self.assertEqual(response.string, dto.string)
+        self.assertEqual(response.date_time, dto.date_time)
+
+        self.assertListEqual(response.int_array, dto.int_array)
+        self.assertListEqual(response.string_array, dto.string_array)
+        self.assertListEqual(response.string_list, dto.string_list)
+        self.assertEqual(len(response.poco_array), len(dto.poco_array))
+        self.assertEqual(response.poco_array[0].name, dto.poco_array[0].name)
+
+        self.assertEqual(len(response.poco_lookup), len(dto.poco_lookup))
+        self.assertEqual(response.poco_lookup["A"][0].name, dto.poco_lookup["A"][0].name)
+        self.assertEqual(response.poco_lookup["A"][1].name, dto.poco_lookup["A"][1].name)
+
+        self.assertEqual(len(response.poco_lookup_map), 1)
+        poco_lookup_map_values = response.poco_lookup_map["A"]
+        self.assertEqual(len(poco_lookup_map_values), 1)
+        poco_lookup_mapa_list = poco_lookup_map_values[0]
+        self.assertEqual(len(poco_lookup_mapa_list), 2)
+        self.assertEqual(poco_lookup_mapa_list["B"].name, "C")
+        self.assertEqual(poco_lookup_mapa_list["D"].name, "E")
+
+        self.assertEqual(len(response.map_list), len(dto.map_list))
+        self.assertListEqual(response.map_list['A'], dto.map_list['A'])
+        self.assertListEqual(response.map_list['B'], dto.map_list['B'])

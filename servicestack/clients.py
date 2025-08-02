@@ -20,7 +20,7 @@ from servicestack.types import IDeleteDb, IPatchDb, IReturn, IReturnVoid, IGet, 
     IDelete, IUpdateDb, QueryBase, ResponseStatus, EmptyResponse, GetAccessToken, GetAccessTokenResponse
 from servicestack.log import Log
 from servicestack.reflection import TypeConverters, to_dict, nameof, is_list, is_dict, _resolve_forwardref, \
-    has_type_vars, _dict_with_string_keys, _get_type_vars_map, from_json, to_json
+    has_type_vars, _dict_with_string_keys, _get_type_vars_map, from_json, to_json, to_jsv_data
 from servicestack.utils import ex_message, clean_camelcase
 
 
@@ -410,10 +410,7 @@ class JsonServiceClient:
             files = [files]
 
         # Convert request DTO to dict
-        request_dict = to_dict(request, key_case=clean_camelcase)
-        request_tuples = []
-        for k, v in request_dict.items():
-            request_tuples.append((k, to_json(v, compact=True)))
+        request_data = to_jsv_data(request)
 
         # Prepare the files dictionary for requests
         files_dict = {}
@@ -435,7 +432,7 @@ class JsonServiceClient:
             # Send the multipart request
             response = self._session.post(
                 url,
-                data=request_tuples,
+                data=request_data,
                 files=files_dict,
                 headers=headers,
                 verify=self._session.verify

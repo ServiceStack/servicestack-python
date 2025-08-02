@@ -72,6 +72,7 @@ __all__ = [
     'qsvalue',
     'resolve_httpmethod',
     'TypeConverters',
+    'to_jsv_data',
     'to_json',
     'from_json',
     'all_keys',
@@ -137,7 +138,7 @@ from .types import \
 from .clients import JsonServiceClient, WebServiceException, WebServiceExceptionType, UploadFile, \
     qsvalue, resolve_httpmethod
 
-from .reflection import TypeConverters, to_json, from_json, all_keys, to_dict, convert, is_optional, \
+from .reflection import TypeConverters, to_jsv_data, to_json, from_json, all_keys, to_dict, convert, is_optional, \
     is_list, is_dict, is_builtin, generic_args, generic_arg, inspect_vars, dump, printdump, table, \
     printtable, htmldump, printhtmldump
 

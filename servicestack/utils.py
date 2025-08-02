@@ -1,8 +1,11 @@
 import base64
 import json
 import re
-from datetime import datetime, timezone, timedelta
+import datetime
 from typing import Optional, Any
+import decimal
+import uuid
+
 
 from .log import Log
 
@@ -118,7 +121,7 @@ def split_on_last(s: Optional[str], c: str):
     return [s]
 
 
-def to_timespan(duration: timedelta):
+def to_timespan(duration: datetime.timedelta):
     total_seconds = duration.total_seconds()
     whole_seconds = total_seconds // 1
     seconds = whole_seconds
@@ -192,12 +195,12 @@ def from_timespan(s: Optional[str]):
         ms -= seconds
 
     # print(f"\n\ntimedelta({str})[{has_time}] = {hours}:{minutes}:{seconds}\n\n")
-    return timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds, milliseconds=int(ms * 1000))
+    return datetime.timedelta(days=days, hours=hours, minutes=minutes, seconds=seconds, milliseconds=int(ms * 1000))
 
 
-_MIN_UTC_DATE = datetime.min.replace(tzinfo=timezone.utc)
+_MIN_UTC_DATE = datetime.datetime.min.replace(tzinfo=datetime.timezone.utc)
 _MIN_EPOCH = _MIN_UTC_DATE.timestamp()
-_MAX_UTC_DATE = datetime.max.replace(tzinfo=timezone.utc)
+_MAX_UTC_DATE = datetime.datetime.max.replace(tzinfo=datetime.timezone.utc)
 
 
 def to_datetime(date: datetime):
@@ -218,7 +221,7 @@ def from_datetime(json_date: str):
             epoch_str = last_left_part(epoch_and_zone, '+')
         epoch = int(epoch_str)
         try:
-            return datetime.fromtimestamp(epoch / 1000, timezone.utc)
+            return datetime.datetime.fromtimestamp(epoch / 1000, datetime.timezone.utc)
         except Exception as e:
             if epoch < _MIN_EPOCH:
                 return _MIN_UTC_DATE
@@ -242,9 +245,9 @@ def from_datetime(json_date: str):
             json_date = last_left_part(json_date, '.') + '.' + sec_fraction[0:6] + tz
 
     if is_utc:
-        return datetime.fromisoformat(json_date).replace(tzinfo=timezone.utc)
+        return datetime.datetime.fromisoformat(json_date).replace(tzinfo=datetime.timezone.utc)
     else:
-        return datetime.fromisoformat(json_date)
+        return datetime.datetime.fromisoformat(json_date)
 
 
 def to_bytearray(value: Optional[bytes]):
@@ -281,4 +284,4 @@ def inspect_jwt(jwt: str):
     head = _decode_base64url_payload(left_part(jwt, '.'))
     body = _decode_base64url_payload(left_part(right_part(jwt, '.'), '.'))
     exp = int(body['exp'])
-    return head, body, datetime.fromtimestamp(exp, timezone.utc)
+    return head, body, datetime.fromtimestamp(exp, datetime.timezone.utc)

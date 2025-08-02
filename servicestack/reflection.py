@@ -10,8 +10,9 @@ import pathlib
 import platform
 import typing
 import sys
+import uuid
 from dataclasses import fields, is_dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 from enum import Enum, IntEnum, EnumMeta
 from functools import reduce
 from types import MappingProxyType
@@ -23,7 +24,7 @@ import marshmallow.fields as mf
 
 from servicestack.log import Log
 from servicestack.utils import to_timespan, to_datetime, to_bytearray, from_bytearray, from_datetime, from_timespan
-from .utils import snakecase, uppercase, camelcase
+from .utils import clean_camelcase, snakecase, uppercase, camelcase
 
 
 def is_optional(cls: Type): return get_origin(cls) is Union and type(None) in get_args(cls)
@@ -94,13 +95,15 @@ def identity(x: Any): return x
 
 
 _JSON_TYPES = {str, bool, int, float}
-_BUILT_IN_TYPES = {str, bool, int, float, decimal.Decimal, datetime, timedelta, bytes, bytearray, complex}
-
+_BUILT_IN_TYPES = {
+    str, bool, int, float, decimal.Decimal, datetime, timedelta, date, time, uuid.UUID,
+    bytes, bytearray, complex,    
+}
 
 def is_builtin(t: Type):
     try:
         return t in _BUILT_IN_TYPES or issubclass(t, Enum)
-    except Exception as e:  # throws if t is not hashable
+    except Exception:  # throws if t is not hashable
         return False
 
 
@@ -180,6 +183,19 @@ def to_json(obj: Any, indent=None, compact=False):
         return json.dumps(to_dict(obj), separators=(',', ':'), default=_json_encoder)
     else:
         return json.dumps(to_dict(obj), indent=indent, default=_json_encoder)
+
+def to_jsv_data(request: Any):
+    """
+    Convert request DTO to dict of (key, value) tuples for request session .data arg
+    """
+    request_dict = to_dict(request)
+    request_tuples = []
+    for k, v in request_dict.items():
+        if is_builtin(type(v)):
+            request_tuples.append((k, _json_encoder(v)))
+        else:
+            request_tuples.append((k, to_json(v, compact=True)))
+    return request_tuples
 
 class TypeConverters:
     serializers = {}    # Py3.9: dict[Type, Callable[[Any], Any]]

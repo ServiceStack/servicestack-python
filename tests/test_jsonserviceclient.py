@@ -25,7 +25,7 @@ class TestJsonServiceClient(unittest.TestCase):
 
     def test_does_serialize_dates_correctly_via_get_request(self):
         client = create_test_client()
-        request = EchoTypes(date_time=datetime.datetime(2015, 1, 1, tzinfo=timezone.utc))
+        request = EchoTypes(date_time=datetime.datetime(2015, 1, 1, tzinfo=datetime.timezone.utc))
         response: EchoTypes = client.get(request)
         self.assertEqual(response.date_time, request.date_time)
 

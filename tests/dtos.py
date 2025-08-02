@@ -1,6 +1,6 @@
 """ Options:
-Date: 2024-10-23 07:43:28
-Version: 8.41
+Date: 2025-08-02 04:39:48
+Version: 8.81
 Tip: To override a DTO option, remove "#" prefix before updating
 BaseUrl: https://test.servicestack.net
 
@@ -255,10 +255,10 @@ class AllTypesBase:
     key_value_pair: Optional[KeyValuePair[str, str]] = None
     nullable_date_time: Optional[datetime.datetime] = None
     nullable_time_span: Optional[datetime.timedelta] = None
-    string_list: Optional[List[str]] = None
-    string_array: Optional[List[str]] = None
-    string_map: Optional[Dict[str, str]] = None
-    int_string_map: Optional[Dict[int, str]] = None
+    string_list: List[str] = field(default_factory=list)
+    string_array: List[str] = field(default_factory=list)
+    string_map: Dict[str, str] = field(default_factory=dict)
+    int_string_map: Dict[int, str] = field(default_factory=dict)
     sub_type: Optional[SubType] = None
 
 
@@ -274,8 +274,8 @@ T = TypeVar('T')
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloBase1(Generic[T]):
-    items: Optional[List[T]] = None
-    counts: Optional[List[int]] = None
+    items: List[T] = field(default_factory=list)
+    counts: List[int] = field(default_factory=list)
 
 
 class IPoco:
@@ -320,14 +320,14 @@ class Device:
     id: int = 0
     type: Optional[str] = None
     time_stamp: int = 0
-    channels: Optional[List[Channel]] = None
+    channels: List[Channel] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class Logger:
     id: int = 0
-    devices: Optional[List[Device]] = None
+    devices: List[Device] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -516,32 +516,17 @@ class MessageCrud(IReturnVoid, ISaveDb["MessageCrud"]):
     name: Optional[str] = None
 
 
+T = TypeVar('T')
+
+
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class ArtifactOutput:
-    """
-    Output object for generated artifacts
-    """
-
-    # @ApiMember(Description="URL to access the generated image")
-    url: Optional[str] = None
-    """
-    URL to access the generated image
-    """
-
-
-    # @ApiMember(Description="Filename of the generated image")
-    file_name: Optional[str] = None
-    """
-    Filename of the generated image
-    """
-
-
-    # @ApiMember(Description="Provider used for image generation")
-    provider: Optional[str] = None
-    """
-    Provider used for image generation
-    """
+class QueryResponseAlt(Generic[T]):
+    offset: int = 0
+    total: int = 0
+    results: List[T] = field(default_factory=list)
+    meta: Dict[str, str] = field(default_factory=dict)
+    response_status: Optional[ResponseStatus] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -577,7 +562,7 @@ class MetadataTestNestedChild:
 @dataclass
 class MetadataTestChild:
     name: Optional[str] = None
-    results: Optional[List[MetadataTestNestedChild]] = None
+    results: List[MetadataTestNestedChild] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -667,6 +652,59 @@ class UnAuthInfo:
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
+class AnalyticsLogInfo:
+    id: int = 0
+    date_time: datetime.datetime = datetime.datetime(1, 1, 1)
+    browser: Optional[str] = None
+    device: Optional[str] = None
+    bot: Optional[str] = None
+    op: Optional[str] = None
+    user_id: Optional[str] = None
+    user_name: Optional[str] = None
+    api_key: Optional[str] = None
+    ip: Optional[str] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class RequestSummary:
+    name: Optional[str] = None
+    total_requests: int = 0
+    total_request_length: int = 0
+    min_request_length: int = 0
+    max_request_length: int = 0
+    total_duration: float = 0.0
+    min_duration: float = 0.0
+    max_duration: float = 0.0
+    status: Optional[Dict[int, int]] = None
+    durations: Optional[Dict[str, int]] = None
+    apis: Optional[Dict[str, int]] = None
+    users: Optional[Dict[str, int]] = None
+    ips: Optional[Dict[str, int]] = None
+    api_keys: Optional[Dict[str, int]] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class AnalyticsReports:
+    id: int = 0
+    created: datetime.datetime = datetime.datetime(1, 1, 1)
+    version: Decimal = decimal.Decimal(0)
+    apis: Optional[Dict[str, RequestSummary]] = None
+    users: Optional[Dict[str, RequestSummary]] = None
+    tags: Optional[Dict[str, RequestSummary]] = None
+    status: Optional[Dict[str, RequestSummary]] = None
+    days: Optional[Dict[str, RequestSummary]] = None
+    api_keys: Optional[Dict[str, RequestSummary]] = None
+    ips: Optional[Dict[str, RequestSummary]] = None
+    browsers: Optional[Dict[str, RequestSummary]] = None
+    devices: Optional[Dict[str, RequestSummary]] = None
+    bots: Optional[Dict[str, RequestSummary]] = None
+    durations: Optional[Dict[str, int]] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
 class TypesGroup:
     pass
 
@@ -727,23 +765,10 @@ class CustomHttpErrorResponse:
     response_status: Optional[ResponseStatus] = None
 
 
-T = TypeVar('T')
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class QueryResponseAlt(Generic[T]):
-    offset: int = 0
-    total: int = 0
-    results: Optional[List[Item]] = None
-    meta: Optional[Dict[str, str]] = None
-    response_status: Optional[ResponseStatus] = None
-
-
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class Items:
-    results: Optional[List[Item]] = None
+    results: List[Item] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -773,22 +798,16 @@ class ThrowBusinessErrorResponse:
     response_status: Optional[ResponseStatus] = None
 
 
+# @Api(Description="Response object for text generation requests")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class GenerationResponse:
+class TextGenerationResponse:
     """
-    Response object for generation requests
+    Response object for text generation requests
     """
-
-    # @ApiMember(Description="List of generated outputs")
-    outputs: Optional[List[ArtifactOutput]] = None
-    """
-    List of generated outputs
-    """
-
 
     # @ApiMember(Description="List of generated text outputs")
-    text_outputs: Optional[List[TextOutput]] = None
+    results: Optional[List[TextOutput]] = None
     """
     List of generated text outputs
     """
@@ -806,8 +825,32 @@ class GenerationResponse:
 class TestFileUploadsResponse:
     id: Optional[int] = None
     ref_id: Optional[str] = None
-    files: Optional[List[UploadInfo]] = None
+    files: List[UploadInfo] = field(default_factory=list)
     response_status: Optional[ResponseStatus] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class TestUploadWithDto(IReturn["TestUploadWithDto"], IPost):
+    int_: int = field(metadata=config(field_name='int'), default=0)
+    nullable_id: Optional[int] = None
+    long: int = 0
+    double: float = 0.0
+    string: Optional[str] = None
+    date_time: datetime.datetime = datetime.datetime(1, 1, 1)
+    int_array: Optional[List[int]] = None
+    int_list: Optional[List[int]] = None
+    string_array: Optional[List[str]] = None
+    string_list: Optional[List[str]] = None
+    poco_array: Optional[List[Poco]] = None
+    poco_list: Optional[List[Poco]] = None
+    nullable_byte_array: Optional[List[Optional[int]]] = None
+    nullable_byte_list: Optional[List[int]] = None
+    nullable_date_time_array: Optional[List[Optional[datetime.datetime]]] = None
+    nullable_date_time_list: Optional[List[datetime.datetime]] = None
+    poco_lookup: Optional[Dict[str, List[Poco]]] = None
+    poco_lookup_map: Optional[Dict[str, List[Dict[str, Poco]]]] = None
+    map_list: Optional[Dict[str, List[str]]] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -848,7 +891,7 @@ class CreateRefreshJwtResponse:
 @dataclass
 class MetadataTestResponse:
     id: int = 0
-    results: Optional[List[MetadataTestChild]] = None
+    results: List[MetadataTestChild] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -870,22 +913,12 @@ class Message(IReturn["Message"]):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class GetRandomIdsResponse:
-    results: Optional[List[str]] = None
+    results: List[str] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloResponse:
-    result: Optional[str] = None
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
-class HelloAnnotatedResponse:
-    """
-    Description on HelloAllResponse type
-    """
-
     result: Optional[str] = None
 
 
@@ -913,30 +946,29 @@ class AllTypes(IReturn["AllTypes"]):
     key_value_pair: Optional[KeyValuePair[str, str]] = None
     nullable_date_time: Optional[datetime.datetime] = None
     nullable_time_span: Optional[datetime.timedelta] = None
-    string_list: Optional[List[str]] = None
-    string_array: Optional[List[str]] = None
-    string_map: Optional[Dict[str, str]] = None
-    int_string_map: Optional[Dict[int, str]] = None
+    string_list: List[str] = field(default_factory=list)
+    string_array: List[str] = field(default_factory=list)
+    string_map: Dict[str, str] = field(default_factory=dict)
+    int_string_map: Dict[int, str] = field(default_factory=dict)
     sub_type: Optional[SubType] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class AllCollectionTypes(IReturn["AllCollectionTypes"]):
-    int_array: Optional[List[int]] = None
-    int_list: Optional[List[int]] = None
-    string_array: Optional[List[str]] = None
-    string_list: Optional[List[str]] = None
-    float_array: Optional[List[float]] = None
-    double_list: Optional[List[float]] = None
-    byte_array: Optional[bytes] = None
-    char_array: Optional[List[str]] = None
-    decimal_list: Optional[List[Decimal]] = None
-    poco_array: Optional[List[Poco]] = None
-    poco_list: Optional[List[Poco]] = None
-    poco_lookup: Optional[Dict[str, List[Poco]]] = None
-    poco_lookup_map: Optional[Dict[str, List[Dict[str, Poco]]]] = None
-    map_list: Optional[Dict[str, List[str]]] = None
+    int_array: List[int] = field(default_factory=list)
+    int_list: List[int] = field(default_factory=list)
+    string_array: List[str] = field(default_factory=list)
+    string_list: List[str] = field(default_factory=list)
+    float_array: List[float] = field(default_factory=list)
+    double_list: List[float] = field(default_factory=list)
+    byte_array: bytes = field(default_factory=list)
+    char_array: List[str] = field(default_factory=list)
+    decimal_list: List[Decimal] = field(default_factory=list)
+    poco_array: List[Poco] = field(default_factory=list)
+    poco_list: List[Poco] = field(default_factory=list)
+    poco_lookup: Dict[str, List[Poco]] = field(default_factory=dict)
+    poco_lookup_map: Dict[str, List[Dict[str, Poco]]] = field(default_factory=dict)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -1076,7 +1108,7 @@ class GetStuffResponse:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class StoreLogsResponse:
-    existing_logs: Optional[List[Logger]] = None
+    existing_logs: List[Logger] = field(default_factory=list)
     response_status: Optional[ResponseStatus] = None
 
 
@@ -1194,6 +1226,21 @@ class RockstarWithIdAndRowVersionResponse:
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
+class GetAnalyticsInfoResponse:
+    months: Optional[List[str]] = None
+    result: Optional[AnalyticsLogInfo] = None
+    response_status: Optional[ResponseStatus] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class GetAnalyticsReportsResponse:
+    result: Optional[AnalyticsReports] = None
+    response_status: Optional[ResponseStatus] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
 class QueryItems(QueryDb2[Item, Poco], IReturn[QueryResponse[Poco]]):
     pass
 
@@ -1300,8 +1347,8 @@ class DeclarativeCollectiveValidationTest(IReturn[EmptyResponse]):
     # @Validate(Validator="MaximumLength(20)")
     site: Optional[str] = None
 
-    declarative_validations: Optional[List[DeclarativeChildValidation]] = None
-    fluent_validations: Optional[List[FluentChildValidation]] = None
+    declarative_validations: List[DeclarativeChildValidation] = field(default_factory=list)
+    fluent_validations: List[FluentChildValidation] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -1403,14 +1450,14 @@ class ThrowBusinessError(IReturn[ThrowBusinessErrorResponse]):
 # @Api(Description="Convert speech to text")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class SpeechToText(IReturn[GenerationResponse], IGeneration):
+class SpeechToText(IReturn[TextGenerationResponse], IGeneration):
     """
     Convert speech to text
     """
 
     # @ApiMember(Description="The audio stream containing the speech to be transcribed")
     # @Required()
-    audio: Optional[bytes] = None
+    audio: Optional[str] = None
     """
     The audio stream containing the speech to be transcribed
     """
@@ -1626,16 +1673,6 @@ class HelloSecure(IReturn[HelloResponse]):
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class HelloAnnotated(IReturn[HelloAnnotatedResponse]):
-    """
-    Description on HelloAll type
-    """
-
-    name: Optional[str] = None
-
-
-@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
-@dataclass
 class HelloWithNestedClass(IReturn[HelloResponse]):
     name: Optional[str] = None
     nested_class_prop: Optional[NestedClass] = None
@@ -1644,25 +1681,25 @@ class HelloWithNestedClass(IReturn[HelloResponse]):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloList(IReturn[List[ListResult]]):
-    names: Optional[List[str]] = None
+    names: List[str] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloArray(IReturn[List[ArrayResult]]):
-    names: Optional[List[str]] = None
+    names: List[str] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloMap(IReturn[Dict[str, ArrayResult]]):
-    names: Optional[List[str]] = None
+    names: List[str] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloQueryResponse(IReturn[QueryResponse[str]]):
-    names: Optional[List[str]] = None
+    names: List[str] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -1681,29 +1718,27 @@ class HelloWithEnum:
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloWithEnumList:
-    enum_prop: Optional[List[EnumType]] = None
-    enum_with_values: Optional[List[EnumWithValues]] = None
-    nullable_enum_prop: Optional[List[EnumType]] = None
-    enum_flags: Optional[List[EnumFlags]] = None
-    enum_style: Optional[List[EnumStyle]] = None
+    enum_prop: List[EnumType] = field(default_factory=list)
+    enum_with_values: List[EnumWithValues] = field(default_factory=list)
+    nullable_enum_prop: List[EnumType] = field(default_factory=list)
+    enum_flags: List[EnumFlags] = field(default_factory=list)
+    enum_style: List[EnumStyle] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class HelloWithEnumMap:
-    enum_prop: Optional[Dict[str, EnumType]] = None
-    enum_with_values: Optional[Dict[str, EnumWithValues]] = None
-    nullable_enum_prop: Optional[Dict[str, EnumType]] = None
-    enum_flags: Optional[Dict[str, EnumFlags]] = None
-    enum_style: Optional[Dict[str, EnumStyle]] = None
+    enum_prop: Dict[str, EnumType] = field(default_factory=dict)
+    enum_with_values: Dict[str, EnumWithValues] = field(default_factory=dict)
+    nullable_enum_prop: Dict[str, EnumType] = field(default_factory=dict)
+    enum_flags: Dict[str, EnumFlags] = field(default_factory=dict)
+    enum_style: Dict[str, EnumStyle] = field(default_factory=dict)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class RestrictedAttributes:
-    id: int = 0
+class HelloExternal:
     name: Optional[str] = None
-    hello: Optional[Hello] = None
 
 
 # @Route("/allowed-attributes", "GET")
@@ -1871,7 +1906,7 @@ class EnumRequest(IReturn[EnumResponse], IPut):
 @dataclass
 class HelloZip(IReturn[HelloZipResponse]):
     name: Optional[str] = None
-    test: Optional[List[str]] = None
+    test: List[str] = field(default_factory=list)
 
 
 # @Route("/ping")
@@ -1906,14 +1941,14 @@ class ReturnString(IReturn[str]):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class ReturnBytes(IReturn[bytes]):
-    data: Optional[bytes] = None
+    data: bytes = field(default_factory=list)
 
 
 # @Route("/return/stream")
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class ReturnStream(IReturn[bytes]):
-    data: Optional[bytes] = None
+    data: bytes = field(default_factory=list)
 
 
 # @Route("/return/json")
@@ -2054,7 +2089,7 @@ class GetStuff(IReturn[GetStuffResponse]):
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
 class StoreLogs(IReturn[StoreLogsResponse]):
-    loggers: Optional[List[Logger]] = None
+    loggers: List[Logger] = field(default_factory=list)
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -2198,25 +2233,23 @@ class RealDeleteAuditTenant(IReturn[RockstarWithIdAndCountResponse], IDeleteDb[R
 class CreateRockstarVersion(RockstarBase, IReturn[RockstarWithIdAndRowVersionResponse], ICreateDb[RockstarVersion]):
     pass
 
+
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
 @dataclass
-class TestUpload(IReturn["TestUpload"], IPost):
-    int_: int = field(metadata=config(field_name='int'), default=0)
-    nullable_id: Optional[int] = None
-    long: int = 0
-    double: float = 0.0
-    string: Optional[str] = None
-    date_time: datetime.datetime = datetime.datetime(1, 1, 1)
-    int_array: List[int] = field(default_factory=list)
-    int_list: List[int] = field(default_factory=list)
-    string_array: List[str] = field(default_factory=list)
-    string_list: List[str] = field(default_factory=list)
-    poco_array: List[Poco] = field(default_factory=list)
-    poco_list: List[Poco] = field(default_factory=list)
-    nullable_byte_array: List[Optional[int]] = field(default_factory=list)
-    nullable_byte_list: List[int] = field(default_factory=list)
-    nullable_date_time_array: List[Optional[datetime.datetime]] = field(default_factory=list)
-    nullable_date_time_list: List[datetime.datetime] = field(default_factory=list)
-    poco_lookup: Dict[str, List[Poco]] = field(default_factory=dict)
-    poco_lookup_map: Dict[str, List[Dict[str, Poco]]] = field(default_factory=dict)
-    map_list: Optional[Dict[str, List[str]]] = None
+class GetAnalyticsInfo(IReturn[GetAnalyticsInfoResponse], IGet):
+    month: Optional[datetime.datetime] = None
+    type: Optional[str] = None
+    op: Optional[str] = None
+    api_key: Optional[str] = None
+    user_id: Optional[str] = None
+    ip: Optional[str] = None
+
+
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class GetAnalyticsReports(IReturn[GetAnalyticsReportsResponse], IGet):
+    month: Optional[datetime.datetime] = None
+    filter: Optional[str] = None
+    value: Optional[str] = None
+    force: Optional[bool] = None
+
