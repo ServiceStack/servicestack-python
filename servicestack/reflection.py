@@ -175,9 +175,11 @@ def _json_encoder(obj: Any):
     raise TypeError(f"Unsupported Type in JSON encoding: {t}")
 
 
-def to_json(obj: Any, indent=None):
-    return json.dumps(to_dict(obj), indent=indent, default=_json_encoder)
-
+def to_json(obj: Any, indent=None, compact=False):
+    if compact:
+        return json.dumps(to_dict(obj), separators=(',', ':'), default=_json_encoder)
+    else:
+        return json.dumps(to_dict(obj), indent=indent, default=_json_encoder)
 
 class TypeConverters:
     serializers = {}    # Py3.9: dict[Type, Callable[[Any], Any]]
