@@ -936,6 +936,7 @@ class AllCollectionTypes(IReturn["AllCollectionTypes"]):
     poco_list: Optional[List[Poco]] = None
     poco_lookup: Optional[Dict[str, List[Poco]]] = None
     poco_lookup_map: Optional[Dict[str, List[Dict[str, Poco]]]] = None
+    map_list: Optional[Dict[str, List[str]]] = None
 
 
 @dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
@@ -2197,3 +2198,25 @@ class RealDeleteAuditTenant(IReturn[RockstarWithIdAndCountResponse], IDeleteDb[R
 class CreateRockstarVersion(RockstarBase, IReturn[RockstarWithIdAndRowVersionResponse], ICreateDb[RockstarVersion]):
     pass
 
+@dataclass_json(letter_case=LetterCase.CAMEL, undefined=Undefined.EXCLUDE)
+@dataclass
+class TestUpload(IReturn["TestUpload"], IPost):
+    int_: int = field(metadata=config(field_name='int'), default=0)
+    nullable_id: Optional[int] = None
+    long: int = 0
+    double: float = 0.0
+    string: Optional[str] = None
+    date_time: datetime.datetime = datetime.datetime(1, 1, 1)
+    int_array: List[int] = field(default_factory=list)
+    int_list: List[int] = field(default_factory=list)
+    string_array: List[str] = field(default_factory=list)
+    string_list: List[str] = field(default_factory=list)
+    poco_array: List[Poco] = field(default_factory=list)
+    poco_list: List[Poco] = field(default_factory=list)
+    nullable_byte_array: List[Optional[int]] = field(default_factory=list)
+    nullable_byte_list: List[int] = field(default_factory=list)
+    nullable_date_time_array: List[Optional[datetime.datetime]] = field(default_factory=list)
+    nullable_date_time_list: List[datetime.datetime] = field(default_factory=list)
+    poco_lookup: Dict[str, List[Poco]] = field(default_factory=dict)
+    poco_lookup_map: Dict[str, List[Dict[str, Poco]]] = field(default_factory=dict)
+    map_list: Optional[Dict[str, List[str]]] = None

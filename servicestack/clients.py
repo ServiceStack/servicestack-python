@@ -411,6 +411,10 @@ class JsonServiceClient:
 
         # Convert request DTO to dict
         request_dict = to_dict(request, key_case=clean_camelcase)
+        request_tuples = []
+        for k, v in request_dict.items():
+            request_tuples.append((k, to_json(v, compact=True)))
+        print(request_tuples)
 
         # Prepare the files dictionary for requests
         files_dict = {}
@@ -432,7 +436,7 @@ class JsonServiceClient:
             # Send the multipart request
             response = self._session.post(
                 url,
-                data=request_dict,
+                data=request_tuples,
                 files=files_dict,
                 headers=headers,
                 verify=self._session.verify
