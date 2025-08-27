@@ -3,6 +3,7 @@
     "python.testing.unittestEnabled": false,
     "python.testing.autoTestDiscoverOnSaveEnabled": true,
     "python.testing.pytestArgs": [
+        "-s",
         "tests"
     ]
 }
