@@ -91,6 +91,8 @@ def qsvalue(arg):
         return "{" + ','.join([k + ":" + qsvalue(v) for k, v in arg]) + "}"
     if arg_type is str:
         return quote_plus(arg)
+    if issubclass(arg_type, Enum):
+        return qsvalue(arg.value)
     if arg_type in TypeConverters.serializers:
         return TypeConverters.serialize(arg)
     return quote_plus(str(arg))

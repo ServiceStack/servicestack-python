@@ -2,6 +2,7 @@
 """
 
 import unittest
+import json
 
 from servicestack import to_json, convert
 from servicestack.utils import *
@@ -67,3 +68,17 @@ class TestEnumSerialization(unittest.TestCase):
         json_obj = json.loads(json_str)
         from_json_obj = convert(HelloWithEnumMap, json_obj)
         self.assertEqual(from_json_obj, dto)
+
+    def test_does_serialize_list_of_enums_on_queryString(self):
+        dto = HelloWithEnumList(
+            enum_flags=[EnumFlags.VALUE1, EnumFlags.VALUE2],
+            enum_style=[EnumStyle.LOWER, EnumStyle.UPPER])
+        json_str = to_json(dto)
+
+        print("HelloWithEnumList")
+        print(json.dumps(json.loads(json_str), indent=2))
+        json_obj = json.loads(json_str)
+        from_json_obj = convert(HelloWithEnumList, json_obj)
+        self.assertEqual(from_json_obj, dto)
+        self.assertEqual(qsvalue(dto.enum_flags), "[1,2]")
+        self.assertEqual(qsvalue(dto.enum_style), "[lower,UPPER]")
