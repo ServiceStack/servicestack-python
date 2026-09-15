@@ -39,7 +39,7 @@ def _resolve_response_type(request):
             for cls in t.__orig_bases__:
                 if get_origin(cls) == IReturn and hasattr(cls, '__args__'):
                     candidate = cls.__args__[0]
-                    if type(candidate) == ForwardRef:
+                    if isinstance(candidate, ForwardRef):
                         return _resolve_forwardref(candidate, type(request))
                     return candidate
         if isinstance(request, IReturnVoid):
@@ -83,7 +83,7 @@ def qsvalue(arg):
     if arg is None:
         return ""
     arg_type = type(arg)
-    if arg_type == bool:
+    if isinstance(arg, bool):
         return f"{arg}".lower()
     if is_list(arg_type):
         return "[" + ','.join([qsvalue(x) for x in arg]) + "]"
@@ -567,7 +567,7 @@ class JsonServiceClient:
         return e
 
     def _handle_error(self, hold_res: Optional[Response], e: Exception, kind: Optional[WebServiceExceptionType] = None):
-        if type(e) == WebServiceException:
+        if isinstance(e, WebServiceException):
             raise self._raise_error(hold_res, e)
 
         web_ex = WebServiceException()
@@ -578,7 +578,7 @@ class JsonServiceClient:
             web_ex.type = kind
 
         res = hold_res
-        if type(e) == HTTPError and e.response is not None:
+        if isinstance(e, HTTPError) and e.response is not None:
             res = e.response
 
         if res is not None:
